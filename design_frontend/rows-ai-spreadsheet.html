@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rows AI — Smart Spreadsheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   DESIGN SYSTEM — Rows AI Spreadsheet
+   Surface: Operate + Command/Inspect
+   Theme: Light base, dark sidebar, violet accent
+   ═══════════════════════════════════════════ */
+:root {
+  --bg-primary: #f8f9fc;
+  --bg-surface: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-sidebar: #1a1b26;
+  --bg-sidebar-hover: #24253a;
+  --bg-sidebar-active: #2d2e45;
+  --bg-grid-header: #f1f3f8;
+  --bg-grid-alt: #fafbfd;
+  --bg-grid-selected: #eef0ff;
+  --bg-grid-hover: #f5f6fa;
+  --bg-ribbon: #ffffff;
+  --bg-ribbon-toolbar: #f3f4f8;
+
+  --text-primary: #1a1d2e;
+  --text-secondary: #6b7194;
+  --text-tertiary: #9498b3;
+  --text-sidebar: #c8cbe3;
+  --text-sidebar-dim: #7b7f9e;
+  --text-ribbon: #333333;
+  --text-ribbon-active: #217346;
+
+  --accent: #6c5ce7;
+  --accent-light: #a29bfe;
+  --accent-bg: #f0eeff;
+  --accent-hover: #5a4bd6;
+  --accent-gradient: linear-gradient(135deg, #6c5ce7, #a29bfe);
+
+  --border: #e2e5f0;
+  --border-light: #eceef5;
+  --border-focus: #6c5ce7;
+  --border-ribbon: #dfe3e8;
+
+  --success: #00b894;
+  --success-bg: #e6faf5;
+  --warning: #fdcb6e;
+  --warning-bg: #fef9e7;
+  --danger: #e17055;
+  --danger-bg: #fdecea;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-8: 32px; --sp-10: 40px;
+
+  --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-xl: 16px;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
+  --shadow-xl: 0 8px 32px rgba(0,0,0,0.12);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── LAYOUT ─── */
+.app {
+  display: grid;
+  grid-template-columns: 260px 1fr 380px;
+  grid-template-rows: auto auto 1fr;
+  grid-template-areas:
+    "sidebar  ribbon    ribbon"
+    "sidebar  formula   panel"
+    "sidebar  content   panel";
+  height: 100vh;
+}
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  grid-area: sidebar;
+  background: var(--bg-sidebar);
+  color: var(--text-sidebar);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  grid-row: 1 / -1;
+}
+
+.sidebar-logo {
+  padding: var(--sp-5) var(--sp-5);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  height: 52px;
+}
+
+.sidebar-logo svg { width: 28px; height: 28px; flex-shrink: 0; }
+
+.sidebar-logo span {
+  font-size: 17px; font-weight: 700; color: #fff; letter-spacing: -0.3px;
+}
+
+.sidebar-nav {
+  padding: var(--sp-3);
+  flex: 1;
+  overflow-y: auto;
+}
+
+.nav-section-label {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 1px; color: var(--text-sidebar-dim);
+  padding: var(--sp-4) var(--sp-3) var(--sp-2);
+}
+
+.nav-item {
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md);
+  cursor: pointer; font-size: 13.5px; font-weight: 500;
+  transition: background 0.15s; color: var(--text-sidebar);
+}
+
+.nav-item:hover { background: var(--bg-sidebar-hover); }
+.nav-item.active { background: var(--bg-sidebar-active); color: #fff; }
+.nav-item svg { width: 18px; height: 18px; opacity: 0.7; flex-shrink: 0; }
+.nav-item.active svg { opacity: 1; }
+
+.nav-badge {
+  margin-left: auto; background: var(--accent); color: #fff;
+  font-size: 10px; font-weight: 600; padding: 2px 6px;
+  border-radius: 10px; min-width: 18px; text-align: center;
+}
+
+.sidebar-footer {
+  padding: var(--sp-4);
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.user-info {
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-2); border-radius: var(--r-md);
+  cursor: pointer; transition: background 0.15s;
+}
+
+.user-info:hover { background: var(--bg-sidebar-hover); }
+
+.user-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--accent-gradient);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; color: #fff; flex-shrink: 0;
+}
+
+.user-name { font-size: 13px; font-weight: 500; color: #fff; }
+.user-email { font-size: 11px; color: var(--text-sidebar-dim); }
+
+/* ═══════════════════════════════════════════════
+   RIBBON — Excel-style tab bar + toolbar
+   ═══════════════════════════════════════════════ */
+.ribbon {
+  grid-area: ribbon;
+  background: var(--bg-ribbon);
+  border-bottom: 1px solid var(--border-ribbon);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tab Bar */
+.ribbon-tabs {
+  display: flex;
+  align-items: center;
+  padding: 0;
+  background: var(--bg-ribbon);
+  border-bottom: 1px solid var(--border-ribbon);
+  min-height: 36px;
+}
+
+.ribbon-tabs .logo-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-4);
+  height: 36px;
+  border-right: 1px solid var(--border-ribbon);
+  cursor: default;
+}
+
+.ribbon-tabs .logo-tab svg { width: 20px; height: 20px; }
+
+.ribbon-tab {
+  padding: 0 var(--sp-4);
+  height: 36px;
+  display: flex;
+  align-items: center;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-ribbon);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.12s;
+  user-select: none;
+  border: none;
+  background: transparent;
+  font-family: var(--font-sans);
+}
+
+.ribbon-tab:hover {
+  background: var(--bg-grid-hover);
+}
+
+.ribbon-tab.active {
+  color: var(--text-ribbon-active);
+  font-weight: 600;
+}
+
+.ribbon-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: var(--sp-4);
+  right: var(--sp-4);
+  height: 2.5px;
+  background: var(--text-ribbon-active);
+  border-radius: 2px 2px 0 0;
+}
+
+.ribbon-spacer { flex: 1; }
+
+.ribbon-tabs-right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 0 var(--sp-3);
+}
+
+.ribbon-tab-right {
+  padding: 4px var(--sp-3);
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  font-family: var(--font-sans);
+  transition: all 0.12s;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.ribbon-tab-right:hover {
+  background: var(--bg-grid-hover);
+  color: var(--text-primary);
+}
+
+.ribbon-tab-right svg { width: 14px; height: 14px; }
+
+/* Ribbon Toolbar Content */
+.ribbon-toolbar {
+  display: flex;
+  align-items: stretch;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--bg-ribbon);
+  min-height: 72px;
+  gap: var(--sp-1);
+  overflow-x: auto;
+}
+
+.ribbon-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 var(--sp-2);
+  border-right: 1px solid var(--border-ribbon);
+  position: relative;
+  min-width: 0;
+}
+
+.ribbon-group:last-child { border-right: none; }
+
+.ribbon-group-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  padding: 2px 0;
+  border-top: 1px solid var(--border-light);
+}
+
+.ribbon-group-content {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  padding: var(--sp-1) 0;
+}
+
+.ribbon-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background 0.12s;
+  background: transparent;
+  border: none;
+  font-family: var(--font-sans);
+  min-width: 44px;
+}
+
+.ribbon-btn:hover {
+  background: var(--bg-grid-hover);
+}
+
+.ribbon-btn:active {
+  background: var(--accent-bg);
+}
+
+.ribbon-btn svg {
+  width: 20px;
+  height: 20px;
+  color: var(--text-secondary);
+}
+
+.ribbon-btn:hover svg {
+  color: var(--text-primary);
+}
+
+.ribbon-btn span {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.ribbon-btn:hover span {
+  color: var(--text-primary);
+}
+
+/* Large ribbon button (icon + text side) */
+.ribbon-btn-lg {
+  flex-direction: row;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  min-width: auto;
+}
+
+.ribbon-btn-lg svg { width: 18px; height: 18px; }
+
+/* Small ribbon button (icon only) */
+.ribbon-btn-sm {
+  min-width: 32px;
+  padding: var(--sp-1);
+}
+
+.ribbon-btn-sm svg { width: 16px; height: 16px; }
+
+/* Clipboard / paste-style big button */
+.ribbon-btn-paste {
+  flex-direction: column;
+  padding: var(--sp-1) var(--sp-3);
+  min-width: 52px;
+}
+
+.ribbon-btn-paste svg {
+  width: 28px;
+  height: 28px;
+  color: var(--accent);
+}
+
+/* ═══ FORMULA BAR ═══ */
+.formula-area {
+  grid-area: formula;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--sp-3);
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-surface);
+  gap: var(--sp-2);
+  min-height: 32px;
+}
+
+.cell-ref {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-grid-header);
+  padding: 3px var(--sp-2);
+  border-radius: var(--r-sm);
+  min-width: 60px;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+
+.formula-icon {
+  color: var(--text-tertiary);
+  font-style: italic;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.formula-input {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-primary);
+  border: none;
+  outline: none;
+  background: transparent;
+}
+
+/* ─── CONTENT / SPREADSHEET ─── */
+.content {
+  grid-area: content;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.grid-container {
+  flex: 1;
+  overflow: auto;
+  background: var(--bg-surface);
+}
+
+.spreadsheet {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.spreadsheet th {
+  background: var(--bg-grid-header);
+  border: 1px solid var(--border);
+  padding: 0;
+  font-weight: 500;
+  color: var(--text-secondary);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  user-select: none;
+}
+
+.spreadsheet th.col-header {
+  height: 26px;
+  min-width: 120px;
+  padding: 0 var(--sp-2);
+  text-align: center;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.spreadsheet th.row-header {
+  width: 40px;
+  text-align: center;
+  font-size: 11px;
+  position: sticky;
+  left: 0;
+  z-index: 3;
+}
+
+.spreadsheet th.corner {
+  position: sticky;
+  left: 0;
+  top: 0;
+  z-index: 4;
+}
+
+.spreadsheet td {
+  border: 1px solid var(--border-light);
+  padding: var(--sp-1) var(--sp-3);
+  height: 30px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.1s;
+}
+
+.spreadsheet tr:nth-child(even) td { background: var(--bg-grid-alt); }
+.spreadsheet td:hover { background: var(--bg-grid-hover); }
+
+.spreadsheet td.selected {
+  background: var(--bg-grid-selected);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.spreadsheet td.num {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+.spreadsheet td.header-cell {
+  font-weight: 600;
+  background: var(--bg-grid-header);
+}
+
+.spreadsheet td.positive { color: var(--success); }
+.spreadsheet td.negative { color: var(--danger); }
+
+.spreadsheet td.ai-generated {
+  background: var(--accent-bg);
+  border-left: 2px solid var(--accent);
+}
+
+/* Status Bar */
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-2) var(--sp-4);
+  border-top: 1px solid var(--border-light);
+  background: var(--bg-surface);
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.status-left {
+  display: flex;
+  gap: var(--sp-4);
+  align-items: center;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-sm);
+  font-weight: 500;
+}
+
+.status-pill.ai { background: var(--accent-bg); color: var(--accent); }
+.status-pill.connected { background: var(--success-bg); color: var(--success); }
+
+.status-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+}
+
+/* ═══ RIGHT PANEL — AI ANALYST ═══ */
+.panel {
+  grid-area: panel;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  grid-row: 1 / -1;
+}
+
+.panel-header {
+  padding: var(--sp-3) var(--sp-5);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.panel-title {
+  font-size: 14px; font-weight: 600;
+  display: flex; align-items: center; gap: var(--sp-2);
+}
+
+.panel-title .ai-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.panel-tabs {
+  display: flex; gap: 0; padding: 0 var(--sp-5);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.panel-tab {
+  padding: var(--sp-3) var(--sp-4); font-size: 13px; font-weight: 500;
+  color: var(--text-secondary); cursor: pointer;
+  border-bottom: 2px solid transparent; transition: all 0.15s;
+}
+
+.panel-tab:hover { color: var(--text-primary); }
+.panel-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* Chat Messages */
+.chat-area {
+  flex: 1; overflow-y: auto; padding: var(--sp-4) var(--sp-5);
+  display: flex; flex-direction: column; gap: var(--sp-4);
+}
+
+.chat-msg { display: flex; gap: var(--sp-3); max-width: 100%; }
+
+.chat-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; flex-shrink: 0; font-weight: 600;
+}
+
+.chat-avatar.ai { background: var(--accent-gradient); color: #fff; }
+.chat-avatar.user { background: var(--bg-grid-header); color: var(--text-secondary); }
+
+.chat-bubble { flex: 1; min-width: 0; }
+
+.chat-bubble .sender {
+  font-size: 12px; font-weight: 600; color: var(--text-secondary);
+  margin-bottom: var(--sp-1);
+}
+
+.chat-bubble .text {
+  font-size: 13px; line-height: 1.6; color: var(--text-primary);
+}
+
+.chat-bubble .text code {
+  font-family: var(--font-mono); font-size: 12px;
+  background: var(--bg-grid-header); padding: 1px 5px;
+  border-radius: var(--r-sm); border: 1px solid var(--border);
+}
+
+.chat-bubble .text pre {
+  background: #1a1b26; color: #c0caf5;
+  font-family: var(--font-mono); font-size: 12px;
+  padding: var(--sp-3); border-radius: var(--r-md);
+  overflow-x: auto; margin: var(--sp-2) 0; line-height: 1.5;
+}
+
+.chat-bubble .text pre .kw { color: #bb9af7; }
+.chat-bubble .text pre .fn { color: #7aa2f7; }
+.chat-bubble .text pre .str { color: #9ece6a; }
+.chat-bubble .text pre .num { color: #ff9e64; }
+.chat-bubble .text pre .cm { color: #565f89; }
+
+.action-card {
+  background: var(--bg-primary); border: 1px solid var(--border);
+  border-radius: var(--r-md); padding: var(--sp-3); margin-top: var(--sp-2);
+}
+
+.action-card-header {
+  display: flex; align-items: center; gap: var(--sp-2);
+  margin-bottom: var(--sp-2); font-size: 12px;
+  font-weight: 600; color: var(--text-secondary);
+}
+
+.action-card-header svg { width: 14px; height: 14px; color: var(--accent); }
+
+.action-item {
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm);
+  font-size: 12.5px; color: var(--text-primary);
+  cursor: pointer; transition: background 0.1s;
+}
+
+.action-item:hover { background: var(--accent-bg); }
+.action-item svg { width: 14px; height: 14px; color: var(--accent); flex-shrink: 0; }
+
+/* Chat Input */
+.chat-input-area {
+  padding: var(--sp-4) var(--sp-5);
+  border-top: 1px solid var(--border-light);
+}
+
+.chat-input-wrap {
+  display: flex; align-items: flex-end; gap: var(--sp-2);
+  background: var(--bg-primary); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: var(--sp-2) var(--sp-3);
+  transition: border-color 0.15s;
+}
+
+.chat-input-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-bg);
+}
+
+.chat-input {
+  flex: 1; border: none; outline: none; background: transparent;
+  font-family: var(--font-sans); font-size: 13px;
+  color: var(--text-primary); resize: none;
+  min-height: 20px; max-height: 120px; line-height: 1.5;
+}
+
+.chat-input::placeholder { color: var(--text-tertiary); }
+
+.chat-send {
+  width: 32px; height: 32px; border-radius: var(--r-md);
+  background: var(--accent); color: #fff; border: none;
+  cursor: pointer; display: flex; align-items: center;
+  justify-content: center; transition: background 0.15s; flex-shrink: 0;
+}
+
+.chat-send:hover { background: var(--accent-hover); }
+.chat-send svg { width: 16px; height: 16px; }
+
+.chat-hint {
+  font-size: 11px; color: var(--text-tertiary);
+  margin-top: var(--sp-2); text-align: center;
+}
+
+/* Quick Actions */
+.quick-actions {
+  display: flex; gap: var(--sp-2); padding: var(--sp-2) 0; flex-wrap: wrap;
+}
+
+.quick-action {
+  display: inline-flex; align-items: center; gap: var(--sp-1);
+  padding: var(--sp-1) var(--sp-3); border-radius: 20px;
+  font-size: 12px; font-weight: 500; border: 1px solid var(--border);
+  background: var(--bg-surface); color: var(--text-secondary);
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+
+.quick-action:hover {
+  border-color: var(--accent); color: var(--accent); background: var(--accent-bg);
+}
+
+.quick-action svg { width: 13px; height: 13px; }
+
+/* ─── UPLOAD MODAL ─── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(4px); z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: var(--bg-surface); border-radius: var(--r-xl);
+  box-shadow: var(--shadow-xl); width: 520px; max-width: 90vw;
+  transform: translateY(12px); transition: transform 0.2s; overflow: hidden;
+}
+
+.modal-overlay.open .modal { transform: translateY(0); }
+
+.modal-header {
+  padding: var(--sp-5) var(--sp-6);
+  border-bottom: 1px solid var(--border-light);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.modal-title { font-size: 16px; font-weight: 600; }
+
+.modal-close {
+  width: 32px; height: 32px; border-radius: var(--r-md);
+  border: none; background: transparent; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-secondary); transition: background 0.15s;
+}
+
+.modal-close:hover { background: var(--bg-grid-hover); }
+.modal-body { padding: var(--sp-6); }
+
+.dropzone {
+  border: 2px dashed var(--border); border-radius: var(--r-lg);
+  padding: var(--sp-10) var(--sp-8); text-align: center;
+  cursor: pointer; transition: all 0.2s;
+}
+
+.dropzone:hover, .dropzone.dragover {
+  border-color: var(--accent); background: var(--accent-bg);
+}
+
+.dropzone-icon {
+  width: 48px; height: 48px; border-radius: var(--r-lg);
+  background: var(--accent-bg); display: flex;
+  align-items: center; justify-content: center;
+  margin: 0 auto var(--sp-4);
+}
+
+.dropzone-icon svg { width: 24px; height: 24px; color: var(--accent); }
+
+.dropzone-title {
+  font-size: 15px; font-weight: 600; color: var(--text-primary);
+  margin-bottom: var(--sp-1);
+}
+
+.dropzone-subtitle { font-size: 13px; color: var(--text-secondary); }
+
+.dropzone-formats {
+  display: flex; gap: var(--sp-2); justify-content: center; margin-top: var(--sp-4);
+}
+
+.format-badge {
+  padding: 3px var(--sp-3); border-radius: var(--r-sm);
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  background: var(--bg-grid-header); color: var(--text-secondary);
+}
+
+.modal-footer {
+  padding: var(--sp-4) var(--sp-6);
+  border-top: 1px solid var(--border-light);
+  display: flex; justify-content: flex-end; gap: var(--sp-2);
+}
+
+/* ─── BUTTONS ─── */
+.btn {
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md);
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: all 0.15s; border: 1px solid var(--border);
+  background: var(--bg-surface); color: var(--text-primary);
+}
+
+.btn:hover { background: var(--bg-grid-hover); border-color: var(--border-focus); }
+.btn svg { width: 16px; height: 16px; }
+
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+.btn-sm { padding: var(--sp-1) var(--sp-2); font-size: 12px; }
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 1200px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-areas: "ribbon" "formula" "content";
+  }
+  .sidebar, .panel { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg viewBox="0 0 28 28" fill="none">
+        <rect width="28" height="28" rx="7" fill="#6c5ce7"/>
+        <path d="M8 10h12M8 14h8M8 18h10" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <span>Rows AI</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Workspace</div>
+      <div class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+        Spreadsheets
+        <span class="nav-badge">3</span>
+      </div>
+      <div class="nav-item" onclick="openModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        Import Documents
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        Integrations
+        <span class="nav-badge" style="background:var(--success)">12</span>
+      </div>
+      <div class="nav-section-label">Automate</div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+        Replays
+        <span class="nav-badge">5</span>
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+        Templates
+      </div>
+      <div class="nav-section-label">Analyze</div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        Dashboards
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+        Python Scripts
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar">PC</div>
+        <div>
+          <div class="user-name">Andika</div>
+          <div class="user-email">andikasosha@gmail.com</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══ RIBBON ═══ -->
+  <div class="ribbon">
+    <!-- Tab Bar -->
+    <div class="ribbon-tabs">
+      <div class="logo-tab">
+        <svg viewBox="0 0 28 28" fill="none">
+          <rect width="28" height="28" rx="7" fill="#6c5ce7"/>
+          <path d="M8 10h12M8 14h8M8 18h10" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <button class="ribbon-tab" data-tab="file">File</button>
+      <button class="ribbon-tab active" data-tab="home">Home</button>
+      <button class="ribbon-tab" data-tab="insert">Insert</button>
+      <button class="ribbon-tab" data-tab="draw">Draw</button>
+      <button class="ribbon-tab" data-tab="layout">Page Layout</button>
+      <button class="ribbon-tab" data-tab="formulas">Formulas</button>
+      <button class="ribbon-tab" data-tab="data">Data</button>
+      <button class="ribbon-tab" data-tab="review">Review</button>
+      <button class="ribbon-tab" data-tab="view">View</button>
+      <button class="ribbon-tab" data-tab="dashboard">Dashboard</button>
+      <div class="ribbon-spacer"></div>
+      <div class="ribbon-tabs-right">
+        <button class="ribbon-tab-right">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        </button>
+        <button class="ribbon-tab-right">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+        </button>
+        <button class="ribbon-tab-right">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Ribbon Toolbar (Home tab content) -->
+    <div class="ribbon-toolbar" id="ribbonToolbar">
+
+      <!-- Clipboard Group -->
+      <div class="ribbon-group">
+        <div class="ribbon-group-content">
+          <button class="ribbon-btn ribbon-btn-paste">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+            <span>Paste</span>
+          </button>
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <button class="ribbon-btn ribbon-btn-sm">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              <span>Copy</span>
+            </button>
+            <button class="ribbon-btn ribbon-btn-sm">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>Cut</span>
+            </button>
+          </div>
+        </div>
+        <div class="ribbon-group-label">Clipboard</div>
+      </div>
+
+      <!-- Font Group -->
+      <div class="ribbon-group">
+        <div class="ribbon-group-content" style="flex-direction:column;gap:4px;align-items:stretch;">
+          <div style="display:flex;gap:4px;">
+            <select style="flex:1;padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px;font-family:var(--font-sans);background:#fff;color:var(--text-primary);min-width:90px;">
+              <option>Inter</option><option>JetBrains Mono</option><option>Arial</option>
+            </select>
+            <select style="width:52px;padding:3px 4px;border:1px solid var(--border);border-radius:4px;font-size:11px;font-family:var(--font-sans);background:#fff;color:var(--text-primary);">
+              <option>11</option><option>12</option><option selected>13</option><option>14</option><option>16</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:2px;">
+            <button class="ribbon-btn ribbon-btn-sm" title="Bold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"/><path d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"/></svg></button>
+            <button class="ribbon-btn ribbon-btn-sm" title="Italic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg></button>
+            <button class="ribbon-btn ribbon-btn-sm" title="Underline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v7a6 6 0 006 6 6 6 0 006-6V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg></button>
+            <button class="ribbon-btn ribbon-btn-sm" title="Strikethrough"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.3 4.9c-2.3-.6-4.4-1-6.2-.9-2.7 0-5.3.7-5.3 3.6 0 1.5 1.5 2.8 4.2 3.4"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M8.5 16.4c.6 1.6 2.3 2.6 4.5 2.6 2.7 0 5.3-.9 5.3-3.6 0-.7-.2-1.4-.6-2"/></svg></button>
+          </div>
+        </div>
+        <div class="ribbon-group-label">Font</div>
+      </div>
+
+      <!-- Alignment Group -->
+      <div class="ribbon-group">
+        <div class="ribbon-group-content" style="flex-direction:column;gap:4px;">
+          <div style="display:flex;gap:2px;">
+            <button class="ribbon-btn ribbon-btn-sm" title="Align Left"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg></button>
+            <button class="ribbon-btn ribbon-btn-sm" title="Center"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/></svg></button>
+            <button class="ribbon-btn ribbon-btn-sm" title="Align Right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg></button>
+          </div>
+          <div style="display:flex;gap:2px;">
+            <button class="ribbon-btn ribbon-btn-sm" title="Merge Cells"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12l4-4 4 4M8 12l4 4 4-4"/></svg></button>
+            <button class="ribbon-btn ribbon-btn-sm" title="Wrap Text"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10H7M21 6H3M21 14H3M21 18H7"/></svg></button>
+          </div>
+        </div>
+        <div class="ribbon-group-label">Alignment</div>
+      </div>
+
+      <!-- Number Group -->
+      <div class="ribbon-group">
+        <div class="ribbon-group-content" style="flex-direction:column;gap:4px;align-items:stretch;">
+          <select style="padding:3px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px;font-family:var(--font-sans);background:#fff;color:var(--text-primary);min-width:100px;">
+            <option>General</option><option>Currency</option><option selected>Currency ($)</option><option>Percentage</option><option>Date</option>
+          </select>
+          <div style="display:flex;gap:2px;">
+            <button class="ribbon-btn ribbon-btn-sm" title="Increase Decimal"><span style="font-size:11px;font-weight:600;color:var(--text-secondary);">.0→.00</span></button>
+            <button class="ribbon-btn ribbon-btn-sm" title="Decrease Decimal"><span style="font-size:11px;font-weight:600;color:var(--text-secondary);">.00→.0</span></button>
+          </div>
+        </div>
+        <div class="ribbon-group-label">Number</div>
+      </div>
+
+      <!-- Styles Group -->
+      <div class="ribbon-group">
+        <div class="ribbon-group-content" style="gap:4px;">
+          <button class="ribbon-btn ribbon-btn-sm" title="Conditional Formatting">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>
+            <span style="font-size:10px;">Format</span>
+          </button>
+          <button class="ribbon-btn ribbon-btn-sm" title="Cell Styles">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            <span style="font-size:10px;">Styles</span>
+          </button>
+        </div>
+        <div class="ribbon-group-label">Styles</div>
+      </div>
+
+      <!-- Cells Group -->
+      <div class="ribbon-group">
+        <div class="ribbon-group-content" style="gap:4px;">
+          <button class="ribbon-btn ribbon-btn-sm" title="Insert Cells">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
+            <span style="font-size:10px;">Insert</span>
+          </button>
+          <button class="ribbon-btn ribbon-btn-sm" title="Delete Cells">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/></svg>
+            <span style="font-size:10px;">Delete</span>
+          </button>
+          <button class="ribbon-btn ribbon-btn-sm" title="Format Cells">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            <span style="font-size:10px;">Format</span>
+          </button>
+        </div>
+        <div class="ribbon-group-label">Cells</div>
+      </div>
+
+      <!-- Editing Group -->
+      <div class="ribbon-group">
+        <div class="ribbon-group-content" style="gap:4px;">
+          <button class="ribbon-btn ribbon-btn-sm" title="Sort">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5h10M11 9h7M11 13h4M3 17l4 4 4-4M7 3v18"/></svg>
+            <span style="font-size:10px;">Sort</span>
+          </button>
+          <button class="ribbon-btn ribbon-btn-sm" title="Filter">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            <span style="font-size:10px;">Filter</span>
+          </button>
+          <button class="ribbon-btn ribbon-btn-sm" title="Find & Replace">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <span style="font-size:10px;">Find</span>
+          </button>
+        </div>
+        <div class="ribbon-group-label">Editing</div>
+      </div>
+
+      <!-- AI Group -->
+      <div class="ribbon-group">
+        <div class="ribbon-group-content" style="gap:4px;">
+          <button class="ribbon-btn" title="AI Analyst">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent)"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <span style="color:var(--accent)">AI Analyst</span>
+          </button>
+          <button class="ribbon-btn ribbon-btn-sm" title="AI Generate Column">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent)"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            <span style="font-size:10px;color:var(--accent)">Column</span>
+          </button>
+          <button class="ribbon-btn ribbon-btn-sm" title="AI Forecast">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--accent)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span style="font-size:10px;color:var(--accent)">Forecast</span>
+          </button>
+        </div>
+        <div class="ribbon-group-label">AI</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ FORMULA BAR ═══ -->
+  <div class="formula-area">
+    <div class="cell-ref">E5</div>
+    <span class="formula-icon">fx</span>
+    <input class="formula-input" value='=SUM(D2:D4) * (1 + $B$2)' readonly />
+  </div>
+
+  <!-- ═══ SPREADSHEET ═══ -->
+  <main class="content">
+    <div class="grid-container">
+      <table class="spreadsheet">
+        <thead>
+          <tr>
+            <th class="corner row-header"></th>
+            <th class="col-header">A</th>
+            <th class="col-header">B</th>
+            <th class="col-header">C</th>
+            <th class="col-header">D</th>
+            <th class="col-header" style="border-left:2px solid var(--accent)">E</th>
+            <th class="col-header" style="border-left:2px solid var(--accent)">F</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th class="row-header">1</th>
+            <td class="header-cell">Category</td>
+            <td class="header-cell">Q1 Actual</td>
+            <td class="header-cell">Q2 Actual</td>
+            <td class="header-cell">Q3 Actual</td>
+            <td class="header-cell ai-generated" style="border-left:2px solid var(--accent)">Q4 Forecast</td>
+            <td class="header-cell ai-generated" style="border-left:2px solid var(--accent)">YoY Growth</td>
+          </tr>
+          <tr>
+            <th class="row-header">2</th>
+            <td>Revenue</td>
+            <td class="num">$245,800</td>
+            <td class="num">$312,400</td>
+            <td class="num">$289,100</td>
+            <td class="num ai-generated">$341,200</td>
+            <td class="num positive ai-generated">+18.4%</td>
+          </tr>
+          <tr>
+            <th class="row-header">3</th>
+            <td>COGS</td>
+            <td class="num">$98,320</td>
+            <td class="num">$124,960</td>
+            <td class="num">$115,640</td>
+            <td class="num ai-generated">$136,480</td>
+            <td class="num negative ai-generated">-2.1%</td>
+          </tr>
+          <tr>
+            <th class="row-header">4</th>
+            <td>Gross Profit</td>
+            <td class="num">$147,480</td>
+            <td class="num">$187,440</td>
+            <td class="num">$173,460</td>
+            <td class="num ai-generated">$204,720</td>
+            <td class="num positive ai-generated">+24.7%</td>
+          </tr>
+          <tr>
+            <th class="row-header">5</th>
+            <td>OpEx</td>
+            <td class="num">$62,400</td>
+            <td class="num">$71,200</td>
+            <td class="num">$68,900</td>
+            <td class="num ai-generated">$74,500</td>
+            <td class="num negative ai-generated">-1.3%</td>
+          </tr>
+          <tr>
+            <th class="row-header">6</th>
+            <td class="selected">Net Income</td>
+            <td class="num">$85,080</td>
+            <td class="num">$116,240</td>
+            <td class="num">$104,560</td>
+            <td class="num ai-generated selected">$130,220</td>
+            <td class="num positive ai-generated">+31.2%</td>
+          </tr>
+          <tr>
+            <th class="row-header">7</th>
+            <td>EBITDA Margin</td>
+            <td class="num">39.2%</td>
+            <td class="num">42.8%</td>
+            <td class="num">41.5%</td>
+            <td class="num ai-generated">43.7%</td>
+            <td class="num positive ai-generated">+2.5pp</td>
+          </tr>
+          <tr>
+            <th class="row-header">8</th>
+            <td>Cash Flow</td>
+            <td class="num">$72,100</td>
+            <td class="num">$98,400</td>
+            <td class="num">$89,200</td>
+            <td class="num ai-generated">$112,800</td>
+            <td class="num positive ai-generated">+22.1%</td>
+          </tr>
+          <tr>
+            <th class="row-header">9</th>
+            <td>Headcount</td>
+            <td class="num">12</td>
+            <td class="num">14</td>
+            <td class="num">16</td>
+            <td class="num ai-generated">18</td>
+            <td class="num">—</td>
+          </tr>
+          <tr>
+            <th class="row-header">10</th>
+            <td>Revenue / Employee</td>
+            <td class="num">$20,483</td>
+            <td class="num">$22,314</td>
+            <td class="num">$18,069</td>
+            <td class="num ai-generated">$18,956</td>
+            <td class="num negative ai-generated">-4.7%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="status-bar">
+      <div class="status-left">
+        <span class="status-pill ai"><span class="status-dot"></span> AI Analyst Active</span>
+        <span class="status-pill connected"><span class="status-dot"></span> GA4 Connected</span>
+        <span>Rows 10 × Cols 6</span>
+      </div>
+      <span>Autosaved 2 min ago</span>
+    </div>
+  </main>
+
+  <!-- ═══ AI PANEL ═══ -->
+  <aside class="panel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span class="ai-dot"></span>
+        AI Analyst
+      </div>
+      <div style="margin-left:auto;display:flex;gap:4px;">
+        <button class="btn btn-sm btn-icon" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="panel-tabs">
+      <div class="panel-tab active">Chat</div>
+      <div class="panel-tab">Replays</div>
+      <div class="panel-tab">Sources</div>
+    </div>
+    <div class="chat-area">
+      <div class="chat-msg">
+        <div class="chat-avatar user">PC</div>
+        <div class="chat-bubble">
+          <div class="sender">Andika</div>
+          <div class="text">Create a financial model for a food truck business. Include assumptions, quarterly projections, and charts.</div>
+        </div>
+      </div>
+      <div class="chat-msg">
+        <div class="chat-avatar ai">AI</div>
+        <div class="chat-bubble">
+          <div class="sender">Rows Analyst</div>
+          <div class="text">Built the model across 3 sheets. Here's what I generated:</div>
+          <div class="action-card">
+            <div class="action-card-header">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+              Actions performed
+            </div>
+            <div class="action-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+              Created Assumptions table (Revenue per customer, daily transactions, costs)
+            </div>
+            <div class="action-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+              Added quarterly projections (Q1–Q4) with formulas
+            </div>
+            <div class="action-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              Generated 3 charts: Revenue, Expenses, Break-even analysis
+            </div>
+          </div>
+          <div style="margin-top:8px;">
+            <div class="text">Also generated a Python forecasting script using <code>numpy</code> for Monte Carlo simulation:</div>
+            <pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="kw">def</span> <span class="fn">forecast</span>(n_sims=<span class="num">10000</span>):
+    daily_rev = np.random.normal(<span class="num">450</span>, <span class="num">80</span>, n_sims)
+    annual = daily_rev * <span class="num">312</span>  <span class="cm"># operating days</span>
+    <span class="kw">return</span> np.percentile(annual, [<span class="num">5</span>, <span class="num">50</span>, <span class="num">95</span>])</pre>
+          </div>
+        </div>
+      </div>
+      <div class="chat-msg">
+        <div class="chat-avatar user">PC</div>
+        <div class="chat-bubble">
+          <div class="sender">Andika</div>
+          <div class="text">Pull GA4 traffic for last 90 days and compare with previous period</div>
+        </div>
+      </div>
+      <div class="chat-msg">
+        <div class="chat-avatar ai">AI</div>
+        <div class="chat-bubble">
+          <div class="sender">Rows Analyst</div>
+          <div class="text">Connected to Google Analytics 4. Pulled 90-day traffic data for your property. Created comparison table with period-over-period metrics:</div>
+          <div class="action-card">
+            <div class="action-card-header">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              Data pulled from GA4
+            </div>
+            <div class="action-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+              Total Users: 14,832 (prev: 12,108) → <strong style="color:var(--success)">+22.5%</strong>
+            </div>
+            <div class="action-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Avg Session Duration: 3m 24s (prev: 2m 58s)
+            </div>
+            <div class="action-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              Bounce Rate: 42.3% (prev: 48.7%) → <strong style="color:var(--success)">-6.4pp</strong>
+            </div>
+          </div>
+          <div class="text" style="margin-top:8px">Want me to create charts or schedule this as a daily replay?</div>
+        </div>
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <div class="quick-actions">
+        <span class="quick-action">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          Upload docs
+        </span>
+        <span class="quick-action">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+          Add chart
+        </span>
+        <span class="quick-action">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          New column
+        </span>
+        <span class="quick-action">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+          Save replay
+        </span>
+      </div>
+      <div class="chat-input-wrap">
+        <textarea class="chat-input" rows="1" placeholder="Ask the analyst anything... (Ctrl+Enter to send)"></textarea>
+        <button class="chat-send">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+      <div class="chat-hint">Powered by GPT-4o · 50+ integrations · Unlimited formulas</div>
+    </div>
+  </aside>
+
+</div>
+
+<!-- ═══ UPLOAD MODAL ═══ -->
+<div class="modal-overlay" id="uploadModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Import Documents</span>
+      <button class="modal-close" onclick="closeModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="dropzone" id="dropzone">
+        <div class="dropzone-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        </div>
+        <div class="dropzone-title">Drop files here or click to browse</div>
+        <div class="dropzone-subtitle">Extract data from receipts, contracts, invoices, and more</div>
+        <div class="dropzone-formats">
+          <span class="format-badge">PDF</span>
+          <span class="format-badge">PNG</span>
+          <span class="format-badge">JPG</span>
+          <span class="format-badge">CSV</span>
+          <span class="format-badge">XLSX</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary">Import & Extract</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Modal
+function openModal() { document.getElementById('uploadModal').classList.add('open'); }
+function closeModal() { document.getElementById('uploadModal').classList.remove('open'); }
+document.getElementById('uploadModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// Dropzone
+const dz = document.getElementById('dropzone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('dragover'); });
+
+// Auto-resize textarea
+const ta = document.querySelector('.chat-input');
+ta.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+
+// Ribbon tab switching
+document.querySelectorAll('.ribbon-tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.ribbon-tab').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// Panel tab switching
+document.querySelectorAll('.panel-tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    document.querySelectorAll('.panel-tab').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// Nav item switching
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', function() {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

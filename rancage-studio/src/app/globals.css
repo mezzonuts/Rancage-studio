@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-50: #f0eeff;
+  --color-primary-100: #e0ddff;
+  --color-primary-200: #c4bbf7;
+  --color-primary-300: #a29bfe;
+  --color-primary-400: #8b7cf7;
+  --color-primary-500: #6c5ce7;
+  --color-primary-600: #5a4bd6;
+  --color-primary-700: #4a3cc0;
+  --color-primary-800: #3b2da6;
+  --color-primary-900: #2d2080;
+
+  --color-success: #00b894;
+  --color-danger: #e17055;
+  --color-warning: #fdcb6e;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* ═══════════════════════════════════════════
+   DESIGN SYSTEM — Rows AI Spreadsheet
+   Surface: Operate + Command/Inspect
+   Theme: Light base, dark sidebar, violet accent
+   ═══════════════════════════════════════════ */
+:root {
+  --bg-primary: #f8f9fc;
+  --bg-surface: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-sidebar: #1a1b26;
+  --bg-sidebar-hover: #24253a;
+  --bg-sidebar-active: #2d2e45;
+  --bg-grid-header: #f1f3f8;
+  --bg-grid-alt: #fafbfd;
+  --bg-grid-selected: #eef0ff;
+  --bg-grid-hover: #f5f6fa;
+  --bg-ribbon: #ffffff;
+  --bg-ribbon-toolbar: #f3f4f8;
+
+  --text-primary: #1a1d2e;
+  --text-secondary: #6b7194;
+  --text-tertiary: #9498b3;
+  --text-sidebar: #c8cbe3;
+  --text-sidebar-dim: #7b7f9e;
+  --text-ribbon: #333333;
+  --text-ribbon-active: #217346;
+
+  --accent: #6c5ce7;
+  --accent-light: #a29bfe;
+  --accent-bg: #f0eeff;
+  --accent-hover: #5a4bd6;
+  --accent-gradient: linear-gradient(135deg, #6c5ce7, #a29bfe);
+
+  --border: #e2e5f0;
+  --border-light: #eceef5;
+  --border-focus: #6c5ce7;
+  --border-ribbon: #dfe3e8;
+
+  --success-bg: #e6faf5;
+  --warning-bg: #fef9e7;
+  --danger-bg: #fdecea;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 4px 16px rgba(0,0,0,0.08);
+  --shadow-xl: 0 8px 32px rgba(0,0,0,0.12);
+
+  --background: var(--bg-primary);
+  --foreground: var(--text-primary);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+/* ─── ANIMATIONS ─── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
