@@ -135,8 +135,12 @@ function StudioApp() {
   const [ribbonUnderline, setRibbonUnderline] = useState(false);
   const [ribbonStrike, setRibbonStrike] = useState(false);
   const [ribbonAlign, setRibbonAlign] = useState<'left' | 'center' | 'right'>('left');
+  const [ribbonVAlign, setRibbonVAlign] = useState<'top' | 'middle' | 'bottom'>('bottom');
+  const [ribbonWrap, setRibbonWrap] = useState(false);
   const [ribbonFont, setRibbonFont] = useState('Inter');
   const [ribbonFontSize, setRibbonFontSize] = useState(13);
+  const [formatPainterActive, setFormatPainterActive] = useState(false);
+  const [clipboardFormats, setClipboardFormats] = useState<Record<string, CellFormat>>({});
 
   // Clipboard
   const clipboardRef = useRef<{ data: CellValue[][]; cut: boolean; range: CellRange } | null>(null);
@@ -194,20 +198,18 @@ function StudioApp() {
         return next;
       });
       // Sync ribbon from the anchor cell
-      if (selectedCell) {
-        const f = cellFormats[selectedCell];
-        if (f) {
-          if (format.bold !== undefined) setRibbonBold(format.bold);
-          if (format.italic !== undefined) setRibbonItalic(format.italic);
-          if (format.underline !== undefined) setRibbonUnderline(format.underline);
-          if (format.strikethrough !== undefined) setRibbonStrike(format.strikethrough);
-          if (format.textAlign !== undefined) setRibbonAlign(format.textAlign);
-          if (format.fontFamily !== undefined) setRibbonFont(format.fontFamily);
-          if (format.fontSize !== undefined) setRibbonFontSize(format.fontSize);
-        }
-      }
+      if (format.bold !== undefined) setRibbonBold(format.bold);
+      if (format.italic !== undefined) setRibbonItalic(format.italic);
+      if (format.underline !== undefined) setRibbonUnderline(format.underline);
+      if (format.strikethrough !== undefined) setRibbonStrike(format.strikethrough);
+      if (format.textAlign !== undefined) setRibbonAlign(format.textAlign);
+      if (format.verticalAlign !== undefined) setRibbonVAlign(format.verticalAlign);
+      if (format.wrapText !== undefined) setRibbonWrap(format.wrapText);
+      if (format.fontFamily !== undefined) setRibbonFont(format.fontFamily);
+      if (format.fontSize !== undefined) setRibbonFontSize(format.fontSize);
+      if (format.numberFormat !== undefined) setNumberFormat(format.numberFormat);
     },
-    [selectedCell, cellFormats],
+    [],
   );
 
   const handleSelectionFormat = useCallback(
@@ -217,8 +219,11 @@ function StudioApp() {
       setRibbonUnderline(fmt?.underline ?? false);
       setRibbonStrike(fmt?.strikethrough ?? false);
       setRibbonAlign(fmt?.textAlign ?? 'left');
+      setRibbonVAlign(fmt?.verticalAlign ?? 'bottom');
+      setRibbonWrap(fmt?.wrapText ?? false);
       setRibbonFont(fmt?.fontFamily ?? 'Inter');
       setRibbonFontSize(fmt?.fontSize ?? 13);
+      setNumberFormat(fmt?.numberFormat ?? 'General');
     },
     [],
   );
@@ -391,23 +396,25 @@ function StudioApp() {
     if (!selectedRange) return;
     const nr = normalizeRange(selectedRange);
     const rows: CellValue[][] = [];
+    const fmtMap: Record<string, CellFormat> = {};
     for (let r = nr.start.row; r <= nr.end.row; r++) {
       const row: CellValue[] = [];
       for (let c = nr.start.col; c <= nr.end.col; c++) {
         row.push(gridData[r]?.[c] ?? null);
+        const ref = cellRef(r, c);
+        if (cellFormats[ref]) fmtMap[`${r - nr.start.row},${c - nr.start.col}`] = cellFormats[ref]!;
       }
       rows.push(row);
     }
     clipboardRef.current = { data: rows, cut: false, range: nr };
-    // Also copy to system clipboard as TSV
+    setClipboardFormats(fmtMap);
     const tsv = rows.map((r) => r.map((v) => (v === null ? '' : String(v))).join('\t')).join('\n');
     navigator.clipboard?.writeText(tsv).catch(() => {});
-  }, [selectedRange, gridData]);
+  }, [selectedRange, gridData, cellFormats]);
 
   const handleCut = useCallback(() => {
     if (!selectedRange) return;
     handleCopy();
-    // Clear source cells
     const nr = normalizeRange(selectedRange);
     const newData = gridData.map((r) => [...r]);
     for (let r = nr.start.row; r <= nr.end.row; r++) {
@@ -423,7 +430,6 @@ function StudioApp() {
     const pos = parseRef(selectedCell);
     if (!pos) return;
 
-    // Try system clipboard first
     try {
       const text = await navigator.clipboard.readText();
       if (text) {
@@ -443,25 +449,36 @@ function StudioApp() {
         setGridData(newData);
         return;
       }
-    } catch {
-      // Fallback to internal clipboard
-    }
+    } catch {}
 
-    // Internal clipboard
     if (clipboardRef.current) {
       const { data: clipData, range: clipRange } = clipboardRef.current;
       const newData = gridData.map((r) => [...r]);
+      const newFormats = { ...cellFormats };
       for (let r = 0; r < clipData.length; r++) {
         for (let c = 0; c < clipData[r]!.length; c++) {
           const dr = pos.row + r;
           const dc = pos.col + c;
           if (!newData[dr]) continue;
           newData[dr]![dc] = clipData[r]![c] ?? null;
+          const srcKey = `${r},${c}`;
+          const dstRef = cellRef(dr, dc);
+          if (clipboardFormats[srcKey]) newFormats[dstRef] = { ...clipboardFormats[srcKey] };
         }
       }
       setGridData(newData);
+      setCellFormats(newFormats);
     }
-  }, [selectedCell, gridData]);
+  }, [selectedCell, gridData, cellFormats, clipboardFormats]);
+
+  const handleFormatPainter = useCallback(() => {
+    if (!selectedCell) return;
+    if (formatPainterActive) {
+      setFormatPainterActive(false);
+      return;
+    }
+    setFormatPainterActive(true);
+  }, [selectedCell, formatPainterActive]);
 
   // ─── Insert / Delete Row / Col ──────────────────────────
   const getGridState = useCallback((): GridState => {
@@ -523,6 +540,183 @@ function StudioApp() {
     const ng = gridRemoveCol(gs, pos.col);
     setGridData(ng.data);
   }, [selectedCell, getGridState]);
+
+  // ─── Font Size ──────────────────────────────────────────
+  const handleIncreaseFontSize = useCallback(() => {
+    if (!selectedRange) return;
+    const sizes = [8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 36, 48, 72];
+    const idx = sizes.indexOf(ribbonFontSize);
+    const next = idx < 0 ? 13 : sizes[Math.min(idx + 1, sizes.length - 1)]!;
+    handleFormatChange(selectedRange, { fontSize: next });
+  }, [selectedRange, ribbonFontSize, handleFormatChange]);
+
+  const handleDecreaseFontSize = useCallback(() => {
+    if (!selectedRange) return;
+    const sizes = [8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 36, 48, 72];
+    const idx = sizes.indexOf(ribbonFontSize);
+    const next = idx < 0 ? 13 : sizes[Math.max(idx - 1, 0)]!;
+    handleFormatChange(selectedRange, { fontSize: next });
+  }, [selectedRange, ribbonFontSize, handleFormatChange]);
+
+  // ─── Fill / Text Color ─────────────────────────────────
+  const handleFillColor = useCallback((color: string) => {
+    if (!selectedRange) return;
+    handleFormatChange(selectedRange, { bgColor: color });
+  }, [selectedRange, handleFormatChange]);
+
+  const handleTextColor = useCallback((color: string) => {
+    if (!selectedRange) return;
+    handleFormatChange(selectedRange, { color });
+  }, [selectedRange, handleFormatChange]);
+
+  // ─── Decimal ────────────────────────────────────────────
+  const handleIncreaseDecimal = useCallback(() => {
+    if (!selectedCell) return;
+    const nr = selectedRange ? normalizeRange(selectedRange) : { start: parseRef(selectedCell)!, end: parseRef(selectedCell)! };
+    setCellFormats((prev) => {
+      const next = { ...prev };
+      for (let r = nr.start.row; r <= nr.end.row; r++) {
+        for (let c = nr.start.col; c <= nr.end.col; c++) {
+          const ref = cellRef(r, c);
+          const cur = next[ref]?.numberFormat ?? 'General';
+          const decimals = parseInt(cur.replace(/[^0-9]/g, '')) || 0;
+          next[ref] = { ...next[ref], numberFormat: `0.${'0'.repeat(decimals + 1)}` };
+        }
+      }
+      return next;
+    });
+  }, [selectedCell, selectedRange]);
+
+  const handleDecreaseDecimal = useCallback(() => {
+    if (!selectedCell) return;
+    const nr = selectedRange ? normalizeRange(selectedRange) : { start: parseRef(selectedCell)!, end: parseRef(selectedCell)! };
+    setCellFormats((prev) => {
+      const next = { ...prev };
+      for (let r = nr.start.row; r <= nr.end.row; r++) {
+        for (let c = nr.start.col; c <= nr.end.col; c++) {
+          const ref = cellRef(r, c);
+          const cur = next[ref]?.numberFormat ?? 'General';
+          const decimals = parseInt(cur.replace(/[^0-9]/g, '')) || 0;
+          next[ref] = { ...next[ref], numberFormat: decimals <= 1 ? 'General' : `0.${'0'.repeat(decimals - 1)}` };
+        }
+      }
+      return next;
+    });
+  }, [selectedCell, selectedRange]);
+
+  // ─── Merge Cells ────────────────────────────────────────
+  const handleMergeCells = useCallback(() => {
+    if (!selectedRange) return;
+    const nr = normalizeRange(selectedRange);
+    const topRef = cellRef(nr.start.row, nr.start.col);
+    let topVal: CellValue = null;
+    for (let r = nr.start.row; r <= nr.end.row; r++) {
+      for (let c = nr.start.col; c <= nr.end.col; c++) {
+        const v = gridData[r]?.[c];
+        if (v !== null && v !== undefined && topVal === null) topVal = v;
+      }
+    }
+    const newData = gridData.map((row) => [...row]);
+    for (let r = nr.start.row; r <= nr.end.row; r++) {
+      for (let c = nr.start.col; c <= nr.end.col; c++) {
+        if (newData[r]) newData[r]![c] = null;
+      }
+    }
+    if (newData[nr.start.row]) newData[nr.start.row]![nr.start.col] = topVal;
+    setGridData(newData);
+    handleFormatChange(selectedRange, { textAlign: 'center' });
+  }, [selectedRange, gridData, handleFormatChange]);
+
+  // ─── AutoSum ────────────────────────────────────────────
+  const handleAutoSum = useCallback(() => {
+    if (!selectedCell) return;
+    const pos = parseRef(selectedCell);
+    if (!pos) return;
+
+    const findSumRange = (): string | null => {
+      let startRow = pos.row - 1;
+      while (startRow >= 0) {
+        const v = gridData[startRow]?.[pos.col];
+        if (v === null || v === undefined || v === '') break;
+        startRow--;
+      }
+      startRow++;
+      if (startRow < pos.row) {
+        const startRef = cellRef(startRow, pos.col);
+        const endRef = cellRef(pos.row - 1, pos.col);
+        return `${startRef}:${endRef}`;
+      }
+
+      let startCol = pos.col - 1;
+      while (startCol >= 0) {
+        const v = gridData[pos.row]?.[startCol];
+        if (v === null || v === undefined || v === '') break;
+        startCol--;
+      }
+      startCol++;
+      if (startCol < pos.col) {
+        const startRef = cellRef(pos.row, startCol);
+        const endRef = cellRef(pos.row, pos.col - 1);
+        return `${startRef}:${endRef}`;
+      }
+      return null;
+    };
+
+    const range = findSumRange();
+    if (range) {
+      const newData = gridData.map((r) => [...r]);
+      newData[pos.row]![pos.col] = `=SUM(${range})`;
+      setGridData(newData);
+    }
+  }, [selectedCell, gridData]);
+
+  // ─── Clear ──────────────────────────────────────────────
+  const handleClearAll = useCallback(() => {
+    if (!selectedRange) return;
+    const nr = normalizeRange(selectedRange);
+    const newData = gridData.map((r) => [...r]);
+    for (let r = nr.start.row; r <= nr.end.row; r++) {
+      for (let c = nr.start.col; c <= nr.end.col; c++) {
+        if (newData[r]) newData[r]![c] = null;
+      }
+    }
+    setGridData(newData);
+    setCellFormats((prev) => {
+      const next = { ...prev };
+      for (let r = nr.start.row; r <= nr.end.row; r++) {
+        for (let c = nr.start.col; c <= nr.end.col; c++) {
+          delete next[cellRef(r, c)];
+        }
+      }
+      return next;
+    });
+  }, [selectedRange, gridData]);
+
+  const handleClearContents = useCallback(() => {
+    if (!selectedRange) return;
+    const nr = normalizeRange(selectedRange);
+    const newData = gridData.map((r) => [...r]);
+    for (let r = nr.start.row; r <= nr.end.row; r++) {
+      for (let c = nr.start.col; c <= nr.end.col; c++) {
+        if (newData[r]) newData[r]![c] = null;
+      }
+    }
+    setGridData(newData);
+  }, [selectedRange, gridData]);
+
+  const handleClearFormats = useCallback(() => {
+    if (!selectedRange) return;
+    const nr = normalizeRange(selectedRange);
+    setCellFormats((prev) => {
+      const next = { ...prev };
+      for (let r = nr.start.row; r <= nr.end.row; r++) {
+        for (let c = nr.start.col; c <= nr.end.col; c++) {
+          delete next[cellRef(r, c)];
+        }
+      }
+      return next;
+    });
+  }, [selectedRange]);
 
   // ─── Find ────────────────────────────────────────────────
   const handleFind = useCallback(() => {
@@ -724,6 +918,19 @@ function StudioApp() {
             setRibbonAlign(a);
             handleFormatChange(selectedRange, { textAlign: a });
           }}
+          verticalAlign={ribbonVAlign}
+          onVerticalAlignChange={(a) => {
+            if (!selectedRange) return;
+            setRibbonVAlign(a);
+            handleFormatChange(selectedRange, { verticalAlign: a });
+          }}
+          wrapText={ribbonWrap}
+          onToggleWrapText={() => {
+            if (!selectedRange) return;
+            const v = !ribbonWrap;
+            setRibbonWrap(v);
+            handleFormatChange(selectedRange, { wrapText: v });
+          }}
           fontFamily={ribbonFont}
           onFontFamilyChange={(f) => {
             if (!selectedRange) return;
@@ -736,8 +943,13 @@ function StudioApp() {
             setRibbonFontSize(s);
             handleFormatChange(selectedRange, { fontSize: s });
           }}
+          onIncreaseFontSize={handleIncreaseFontSize}
+          onDecreaseFontSize={handleDecreaseFontSize}
           numberFormat={numberFormat}
-          onNumberFormatChange={setNumberFormat}
+          onNumberFormatChange={(f) => {
+            if (!selectedRange) return;
+            handleFormatChange(selectedRange, { numberFormat: f });
+          }}
           chatOpen={chatOpen}
           aiProcessing={aiProcessing}
           onAIAnalystAction={handleAIAnalystAction}
@@ -746,12 +958,23 @@ function StudioApp() {
           onCopy={handleCopy}
           onCut={handleCut}
           onPaste={handlePaste}
+          onFormatPainter={handleFormatPainter}
+          formatPainterActive={formatPainterActive}
+          onFillColor={handleFillColor}
+          onTextColor={handleTextColor}
+          onIncreaseDecimal={handleIncreaseDecimal}
+          onDecreaseDecimal={handleDecreaseDecimal}
           onInsertRowAbove={handleInsertRowAbove}
           onInsertRowBelow={handleInsertRowBelow}
           onDeleteRow={handleDeleteRow}
           onInsertColLeft={handleInsertColLeft}
           onInsertColRight={handleInsertColRight}
           onDeleteCol={handleDeleteCol}
+          onMergeCells={handleMergeCells}
+          onAutoSum={handleAutoSum}
+          onClearAll={handleClearAll}
+          onClearContents={handleClearContents}
+          onClearFormats={handleClearFormats}
           onFind={handleFind}
         />
 

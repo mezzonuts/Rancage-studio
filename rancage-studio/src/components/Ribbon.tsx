@@ -118,10 +118,16 @@ export interface RibbonProps {
   onToggleStrikethrough: () => void;
   textAlign: 'left' | 'center' | 'right';
   onTextAlignChange: (a: 'left' | 'center' | 'right') => void;
+  verticalAlign: 'top' | 'middle' | 'bottom';
+  onVerticalAlignChange: (a: 'top' | 'middle' | 'bottom') => void;
+  wrapText: boolean;
+  onToggleWrapText: () => void;
   fontFamily: string;
   onFontFamilyChange: (f: string) => void;
   fontSize: number;
   onFontSizeChange: (s: number) => void;
+  onIncreaseFontSize: () => void;
+  onDecreaseFontSize: () => void;
   numberFormat: string;
   onNumberFormatChange: (f: string) => void;
   chatOpen: boolean;
@@ -132,12 +138,23 @@ export interface RibbonProps {
   onCopy?: () => void;
   onCut?: () => void;
   onPaste?: () => void;
+  onFormatPainter?: () => void;
+  formatPainterActive?: boolean;
+  onFillColor?: (color: string) => void;
+  onTextColor?: (color: string) => void;
+  onIncreaseDecimal?: () => void;
+  onDecreaseDecimal?: () => void;
   onInsertRowAbove?: () => void;
   onInsertRowBelow?: () => void;
   onDeleteRow?: () => void;
   onInsertColLeft?: () => void;
   onInsertColRight?: () => void;
   onDeleteCol?: () => void;
+  onMergeCells?: () => void;
+  onAutoSum?: () => void;
+  onClearAll?: () => void;
+  onClearContents?: () => void;
+  onClearFormats?: () => void;
   onFind?: () => void;
 }
 
@@ -419,7 +436,7 @@ function HomeRibbon(props: RibbonProps) {
           <div className="rg-clipboard-side">
             <RibbonBtn icon={I.cut} label="Cut" onClick={props.onCut} size="sm" />
             <RibbonBtn icon={I.copy} label="Copy" onClick={props.onCopy} size="sm" />
-            <RibbonBtn icon={I.formatPainter} label="Format Painter" size="sm" />
+            <RibbonBtn icon={I.formatPainter} label="Format Painter" onClick={props.onFormatPainter} active={props.formatPainterActive} size="sm" />
           </div>
         </div>
       </G>
@@ -449,8 +466,8 @@ function HomeRibbon(props: RibbonProps) {
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
-            <RibbonToggle icon={<FormatSizeIcon sx={{ fontSize: 15 }} />} title="Increase Font Size" />
-            <RibbonToggle icon={<span style={{ fontSize: 12, fontWeight: 700 }}>A</span>} title="Decrease Font Size" />
+            <RibbonToggle icon={<FormatSizeIcon sx={{ fontSize: 15 }} />} onClick={props.onIncreaseFontSize} title="Increase Font Size" />
+            <RibbonToggle icon={<span style={{ fontSize: 12, fontWeight: 700 }}>A</span>} onClick={props.onDecreaseFontSize} title="Decrease Font Size" />
           </div>
           <div className="rg-font-row">
             <RibbonToggle icon={I.bold} active={props.bold} onClick={props.onToggleBold} title="Bold" />
@@ -458,11 +475,11 @@ function HomeRibbon(props: RibbonProps) {
             <RibbonToggle icon={I.underline} active={props.underline} onClick={props.onToggleUnderline} title="Underline" />
             <div className="rb-sep-v" />
             <RibbonToggle icon={I.borderGrid} title="Borders" />
-            <div className="rb-color-btn" title="Fill Color">
+            <div className="rb-color-btn" title="Fill Color" onClick={() => props.onFillColor?.('#facc15')}>
               <FormatColorFillIcon sx={{ fontSize: 14 }} />
               <span className="rb-color-stripe" style={{ background: '#facc15' }} />
             </div>
-            <div className="rb-color-btn" title="Font Color">
+            <div className="rb-color-btn" title="Font Color" onClick={() => props.onTextColor?.('#ef4444')}>
               <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1 }}>A</span>
               <span className="rb-color-stripe" style={{ background: '#ef4444' }} />
             </div>
@@ -474,13 +491,13 @@ function HomeRibbon(props: RibbonProps) {
       <G label="Alignment">
         <div className="rg-align">
           <div className="rg-align-row">
-            <RibbonToggle icon={<VerticalAlignTopIcon sx={{ fontSize: 15 }} />} title="Top Align" />
-            <RibbonToggle icon={<VerticalAlignCenterIcon sx={{ fontSize: 15 }} />} title="Middle Align" />
-            <RibbonToggle icon={<VerticalAlignBottomIcon sx={{ fontSize: 15 }} />} title="Bottom Align" />
+            <RibbonToggle icon={<VerticalAlignTopIcon sx={{ fontSize: 15 }} />} active={props.verticalAlign === 'top'} onClick={() => props.onVerticalAlignChange('top')} title="Top Align" />
+            <RibbonToggle icon={<VerticalAlignCenterIcon sx={{ fontSize: 15 }} />} active={props.verticalAlign === 'middle'} onClick={() => props.onVerticalAlignChange('middle')} title="Middle Align" />
+            <RibbonToggle icon={<VerticalAlignBottomIcon sx={{ fontSize: 15 }} />} active={props.verticalAlign === 'bottom'} onClick={() => props.onVerticalAlignChange('bottom')} title="Bottom Align" />
             <div className="rb-sep-v" />
             <RibbonBtn icon={<span style={{ fontSize: 11, fontWeight: 600, fontStyle: 'italic' }}>ab</span>} label="Orientation" size="sm" dropDown />
             <div className="rb-sep-v" />
-            <RibbonBtn icon={I.wrap} label="Wrap Text" size="sm" />
+            <RibbonBtn icon={I.wrap} label="Wrap Text" size="sm" active={props.wrapText} onClick={props.onToggleWrapText} />
           </div>
           <div className="rg-align-row">
             <RibbonToggle icon={I.alignLeft} active={props.textAlign === 'left'} onClick={() => props.onTextAlignChange('left')} title="Align Left" />
@@ -490,7 +507,7 @@ function HomeRibbon(props: RibbonProps) {
             <RibbonToggle icon={I.indentDecrease} title="Decrease Indent" />
             <RibbonToggle icon={I.indentIncrease} title="Increase Indent" />
             <div className="rb-sep-v" />
-            <RibbonBtn icon={I.merge} label="Merge & Center" dropDown />
+            <RibbonBtn icon={I.merge} label="Merge & Center" dropDown onClick={props.onMergeCells} />
           </div>
         </div>
       </G>
@@ -514,13 +531,13 @@ function HomeRibbon(props: RibbonProps) {
             <option>Text</option>
           </select>
           <div className="rg-number-row">
-            <RibbonBtn icon={I.currency} label="$" size="sm" dropDown />
-            <RibbonBtn icon={I.percent} label="%" size="sm" />
+            <RibbonBtn icon={I.currency} label="$" size="sm" onClick={() => props.onNumberFormatChange('Currency ($)')} />
+            <RibbonBtn icon={I.percent} label="%" size="sm" onClick={() => props.onNumberFormatChange('Percentage')} />
             <div className="rb-sep-v" />
             <RibbonBtn icon={<span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', fontWeight: 600 }}>,</span>} label="" size="sm" />
             <div className="rb-sep-v" />
-            <RibbonToggle icon={<span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', fontWeight: 600 }}>.00→</span>} title="Increase Decimal" />
-            <RibbonToggle icon={<span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', fontWeight: 600 }}>←.00</span>} title="Decrease Decimal" />
+            <RibbonToggle icon={<span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', fontWeight: 600 }}>.00→</span>} onClick={props.onIncreaseDecimal} title="Increase Decimal" />
+            <RibbonToggle icon={<span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', fontWeight: 600 }}>←.00</span>} onClick={props.onDecreaseDecimal} title="Decrease Decimal" />
           </div>
         </div>
       </G>
@@ -542,8 +559,8 @@ function HomeRibbon(props: RibbonProps) {
       {/* ─── Cells ─── */}
       <G label="Cells">
         <div className="rg-cells">
-          <RibbonBtn icon={<AddIcon sx={{ fontSize: 20 }} />} label="Insert" dropDown />
-          <RibbonBtn icon={<DeleteIcon sx={{ fontSize: 20, color: '#ef4444' }} />} label="Delete" dropDown />
+          <RibbonBtn icon={<AddIcon sx={{ fontSize: 20 }} />} label="Insert" dropDown onClick={props.onInsertRowBelow} />
+          <RibbonBtn icon={<DeleteIcon sx={{ fontSize: 20, color: '#ef4444' }} />} label="Delete" dropDown onClick={props.onDeleteRow} />
           <RibbonBtn icon={<AspectRatioIcon sx={{ fontSize: 20 }} />} label="Format" dropDown />
         </div>
       </G>
@@ -552,13 +569,13 @@ function HomeRibbon(props: RibbonProps) {
       <G label="Editing">
         <div className="rg-editing">
           <div className="rg-editing-col">
-            <RibbonBtn icon={I.sum} label="AutoSum" dropDown />
+            <RibbonBtn icon={I.sum} label="AutoSum" onClick={props.onAutoSum} dropDown />
             <RibbonBtn icon={<ArrowDownwardIcon sx={{ fontSize: 15 }} />} label="Fill" dropDown />
-            <RibbonBtn icon={I.eraser} label="Clear" dropDown />
+            <RibbonBtn icon={I.eraser} label="Clear" onClick={props.onClearAll} dropDown />
           </div>
           <div className="rg-editing-col">
             <RibbonBtn icon={I.sort} label="Sort & Filter" dropDown />
-            <RibbonBtn icon={I.find} label="Find & Select" dropDown />
+            <RibbonBtn icon={I.find} label="Find & Select" onClick={props.onFind} dropDown />
           </div>
         </div>
       </G>

@@ -360,10 +360,15 @@ export function SpreadsheetGrid({
                 const effectiveStrike = fmt?.strikethrough ?? false;
                 const effectiveAlign =
                   fmt?.textAlign ?? (isNum ? 'right' : 'left');
+                const effectiveVAlign = fmt?.verticalAlign;
+                const effectiveWrap = fmt?.wrapText ?? false;
                 const effectiveFont = fmt?.fontFamily;
                 const effectiveSize = fmt?.fontSize;
                 const effectiveColor = fmt?.color;
                 const effectiveBg = fmt?.bgColor;
+                const effectiveBorder = fmt?.borderStyle
+                  ? `${fmt.borderStyle} ${fmt.borderWidth ?? '1px'} ${fmt.borderColor ?? '#e5e7eb'}`
+                  : undefined;
 
                 const cellStyle: React.CSSProperties = {
                   width: col.w,
@@ -380,10 +385,14 @@ export function SpreadsheetGrid({
                       .filter(Boolean)
                       .join(' ') || undefined,
                   textAlign: isNum ? 'right' : effectiveAlign,
+                  verticalAlign: effectiveVAlign === 'top' ? 'top' : effectiveVAlign === 'bottom' ? 'bottom' : undefined,
+                  whiteSpace: effectiveWrap ? 'normal' : undefined,
+                  wordBreak: effectiveWrap ? 'break-word' : undefined,
                   fontFamily: getFontFamilyCSS(effectiveFont),
                   fontSize: effectiveSize,
                   color: effectiveColor,
                   backgroundColor: effectiveBg,
+                  ...(effectiveBorder ? { border: effectiveBorder } : {}),
                 };
 
                 return (

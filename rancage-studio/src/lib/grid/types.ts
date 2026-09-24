@@ -7,11 +7,16 @@ export interface CellFormat {
   underline?: boolean;
   strikethrough?: boolean;
   textAlign?: 'left' | 'center' | 'right';
+  verticalAlign?: 'top' | 'middle' | 'bottom';
+  wrapText?: boolean;
   fontFamily?: string;
   fontSize?: number;
   numberFormat?: string;
   color?: string;
   bgColor?: string;
+  borderWidth?: string;
+  borderColor?: string;
+  borderStyle?: string;
 }
 
 export interface CellPosition {
