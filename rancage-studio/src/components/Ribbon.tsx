@@ -1026,7 +1026,7 @@ export function Ribbon(props: RibbonProps) {
           padding: 8px 12px;
           background: var(--bg-ribbon);
           min-height: 72px;
-          gap: 4px;
+          gap: 8px;
           overflow-x: auto;
         }
         .ribbon-group {
@@ -1034,9 +1034,11 @@ export function Ribbon(props: RibbonProps) {
           flex-direction: column;
           align-items: center;
           padding: 0 8px;
+          padding-bottom: 18px;
           border-right: 1px solid var(--border-ribbon);
           position: relative;
-          min-width: 0;
+          flex-shrink: 0;
+          min-width: fit-content;
         }
         .ribbon-group:last-child { border-right: none; }
         .ribbon-group-label {
@@ -1054,8 +1056,7 @@ export function Ribbon(props: RibbonProps) {
         .ribbon-group-content {
           display: flex;
           align-items: center;
-          gap: 2px;
-          flex: 1;
+          gap: 4px;
           padding: 4px 0;
         }
         .ribbon-btn {
@@ -1095,7 +1096,7 @@ export function Ribbon(props: RibbonProps) {
           border-radius: 4px;
           font-size: 11px;
           font-family: var(--font-sans);
-          background: #fff;
+          background: var(--bg-surface);
           color: var(--text-primary);
           outline: none;
           cursor: pointer;
