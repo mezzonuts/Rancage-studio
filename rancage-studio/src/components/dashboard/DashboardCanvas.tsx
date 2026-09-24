@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { DashboardState, WidgetConfig, WidgetType } from '@/lib/dashboard/types';
 import { createWidget } from '@/lib/dashboard/types';
 import { saveDashboard } from '@/lib/dashboard/store';
@@ -49,14 +49,20 @@ export function DashboardCanvas({ dashboard, onDashboardChange, queryFn, onExpor
   const [dash, setDash] = useState(dashboard);
   const [editingWidget, setEditingWidget] = useState<string | null>(null);
 
+  useEffect(() => {
+    setDash(dashboard);
+  }, [dashboard]);
+
   const updateDash = useCallback(
     (updater: (d: DashboardState) => DashboardState) => {
-      const next = updater(dash);
-      setDash(next);
-      saveDashboard(next);
-      onDashboardChange?.(next);
+      setDash((prev) => {
+        const next = updater(prev);
+        saveDashboard(next);
+        onDashboardChange?.(next);
+        return next;
+      });
     },
-    [dash, onDashboardChange]
+    [onDashboardChange]
   );
 
   const addWidget = useCallback(

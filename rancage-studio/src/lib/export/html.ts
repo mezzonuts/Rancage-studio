@@ -40,10 +40,20 @@ function esc(s: string): string {
     .split(DQ).join(AMP + 'quot;');
 }
 
+function safeJSON(data: unknown): string {
+  return JSON.stringify(data).replace(/<\//g, '<\\/');
+}
+
+function escAttr(s: string): string {
+  const AMP = String.fromCharCode(38);
+  const LT = String.fromCharCode(60);
+  return s.split(AMP).join(AMP + 'amp;').split(LT).join(AMP + 'lt;');
+}
+
 export async function buildStandaloneHTML(config: HTMLExportConfig): Promise<string> {
   const maxSize = config.maxDataSize ?? MAX_DATA_SIZE;
 
-  const chartSpecs = JSON.stringify(config.charts);
+  const chartSpecs = safeJSON(config.charts);
   const datasets: Record<string, unknown[]> = {};
   let totalSize = 0;
 
@@ -57,7 +67,7 @@ export async function buildStandaloneHTML(config: HTMLExportConfig): Promise<str
     }
   }
 
-  const datasetJSON = JSON.stringify(datasets);
+  const datasetJSON = safeJSON(datasets);
   const echartsCode = await loadECharts();
   const title = esc(config.title);
 
@@ -92,7 +102,8 @@ export async function buildStandaloneHTML(config: HTMLExportConfig): Promise<str
   parts.push('charts.forEach(function(c){');
   parts.push("var card=document.createElement('div');");
   parts.push("card.className='chart-card';");
-  parts.push("card.innerHTML='<h3>'+c.title+'</h3><div class=\"chart-box\" id=\"chart-'+c.title.replace(/[^a-z0-9]/gi,'')+'\"></div>';");
+  parts.push("card.innerHTML='<h3>'+escTitle(c.title)+'</h3><div class=\"chart-box\" id=\"chart-'+c.title.replace(/[^a-z0-9]/gi,'')+'\"></div>';");
+  parts.push('function escTitle(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}');
   parts.push('container.appendChild(card);');
   parts.push("var chartDiv=card.querySelector('.chart-box');");
   parts.push('var chart=echarts.init(chartDiv);');

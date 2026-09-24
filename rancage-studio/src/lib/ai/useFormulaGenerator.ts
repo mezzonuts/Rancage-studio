@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { FormulaGenerator } from './generation';
 import { adapterConfigFromBYOK } from './types';
 import { useBYOK } from '@/lib/byok/context';
@@ -24,6 +24,7 @@ export function useFormulaGenerator(): UseFormulaGeneratorReturn {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastResult, setLastResult] = useState<FormulaGenerationResult | null>(null);
+  const generationIdRef = useRef(0);
 
   const generateFormula = useCallback(
     async (prompt: string, table: TableContext): Promise<FormulaGenerationResult> => {
@@ -34,6 +35,7 @@ export function useFormulaGenerator(): UseFormulaGeneratorReturn {
         throw new Error('No LLM endpoint configured. Please configure AI in Settings.');
       }
 
+      const currentId = ++generationIdRef.current;
       setIsGenerating(true);
       setError(null);
 
@@ -41,14 +43,24 @@ export function useFormulaGenerator(): UseFormulaGeneratorReturn {
         const adapterConfig = adapterConfigFromBYOK(config);
         const generator = new FormulaGenerator(adapterConfig);
         const result = await generator.generateWithValidation(prompt, table);
+
+        if (currentId !== generationIdRef.current) {
+          throw new Error('Superseded by newer generation');
+        }
+
         setLastResult(result);
         return result;
       } catch (err) {
+        if (currentId !== generationIdRef.current) {
+          throw err;
+        }
         const message = err instanceof Error ? err.message : 'Failed to generate formula';
         setError(message);
         throw new Error(message);
       } finally {
-        setIsGenerating(false);
+        if (currentId === generationIdRef.current) {
+          setIsGenerating(false);
+        }
       }
     },
     [config, isLoading],

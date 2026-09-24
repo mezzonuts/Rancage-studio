@@ -316,7 +316,7 @@ export function AiPanel({
     const text = input.trim();
     if (!text) return;
     const userMsg: ChatMessage = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       role: 'user',
       sender: 'Andika',
       text,
@@ -325,7 +325,7 @@ export function AiPanel({
     setInput('');
     onSend?.(text);
 
-    const aiMsgId = (Date.now() + 1).toString();
+    const aiMsgId = crypto.randomUUID();
     setMessages((prev) => [
       ...prev,
       {
