@@ -165,7 +165,7 @@ const I = {
   filter: <FilterAltIcon className="h-4 w-4" />,
   find: <SearchIcon className="h-4 w-4" />,
   file: <DescriptionIcon className="h-4 w-4" />,
-  newFile: <NoteAddIcon className="h-5 w-5" />,
+  newFile: <NoteAddIcon className="h-4 w-4" />,
   open: <FolderOpenIcon className="h-4 w-4" />,
   save: <SaveIcon className="h-4 w-4" />,
   print: <PrintIcon className="h-4 w-4" />,
@@ -207,7 +207,7 @@ const I = {
   freeze: <LockOpenIcon className="h-4 w-4" />,
   split: <ViewColumnIcon className="h-4 w-4" />,
   dashboard: <DashboardIcon className="h-4 w-4" />,
-  aiBrain: <PsychologyIcon className="h-5 w-5" style={{ color: 'var(--accent)' }} />,
+  aiBrain: <PsychologyIcon className="h-4 w-4" style={{ color: 'var(--accent)' }} />,
   aiDollar: <AttachMoneyIcon className="h-4 w-4" style={{ color: 'var(--accent)' }} />,
   aiChart: <ShowChartIcon className="h-4 w-4" style={{ color: 'var(--accent)' }} />,
   chat: <ChatIcon className="h-4 w-4" style={{ color: 'var(--accent)' }} />,
@@ -254,11 +254,14 @@ function R({
         gap: '2px',
         lineHeight: 'normal',
         color: accent ? 'var(--accent)' : undefined,
+        transition: 'all 0.15s ease',
         '&:hover': {
           background: 'var(--bg-grid-hover)',
+          transform: 'translateY(-1px)',
         },
         '&:active': {
           background: 'var(--accent-bg)',
+          transform: 'translateY(0)',
         },
         '&.active': {
           background: 'var(--accent-bg)',
@@ -1054,6 +1057,8 @@ export function Ribbon(props: RibbonProps) {
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
         }
         .ribbon-group-content {
           display: flex;
@@ -1072,7 +1077,7 @@ export function Ribbon(props: RibbonProps) {
           padding: 4px 8px !important;
           border-radius: 6px !important;
           cursor: pointer !important;
-          transition: background 0.12s !important;
+          transition: all 0.15s ease !important;
           background: transparent !important;
           border: none !important;
           font-family: var(--font-sans) !important;
@@ -1080,8 +1085,8 @@ export function Ribbon(props: RibbonProps) {
           box-shadow: none !important;
           flex-shrink: 1;
         }
-        .ribbon-btn:hover { background: var(--bg-grid-hover) !important; }
-        .ribbon-btn:active { background: var(--accent-bg) !important; }
+        .ribbon-btn:hover { background: var(--bg-grid-hover) !important; transform: translateY(-1px); }
+        .ribbon-btn:active { background: var(--accent-bg) !important; transform: translateY(0); }
         .ribbon-btn.active { background: var(--accent-bg) !important; outline: 1px solid var(--accent) !important; }
         .ribbon-btn svg { width: 20px; height: 20px; color: var(--text-secondary); }
         .ribbon-btn:hover svg { color: var(--text-primary); }

@@ -344,7 +344,6 @@ export function SpreadsheetGrid({
                 const val = grid.data[i]?.[col.i];
                 const isNum = typeof val === 'number';
                 const isHeader = i === 0;
-                const isAiCol = col.i >= 4;
                 const isNegative =
                   typeof val === 'string' &&
                   (val.startsWith('-') ||
@@ -390,7 +389,7 @@ export function SpreadsheetGrid({
                 return (
                   <div
                     key={col.i}
-                    className={`spreadsheet-cell ${isHi ? 'selected' : ''} ${isNum ? 'num' : ''} ${isHeader ? 'header-cell' : ''} ${isAiCol ? 'ai-generated' : ''} ${isPositive ? 'positive' : ''} ${isNegative ? 'negative' : ''}`}
+                    className={`spreadsheet-cell ${isHi ? 'selected' : ''} ${isNum ? 'num' : ''} ${isHeader ? 'header-cell' : ''} ${isPositive ? 'positive' : ''} ${isNegative ? 'negative' : ''}`}
                     style={cellStyle}
                     onMouseDown={(e) => onDown(pos, e)}
                     onMouseEnter={() => onEnter(pos)}
