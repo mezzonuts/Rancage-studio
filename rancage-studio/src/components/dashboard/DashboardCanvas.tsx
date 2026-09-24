@@ -7,6 +7,25 @@ import { saveDashboard } from '@/lib/dashboard/store';
 import { EChartsWidget } from './ChartWidget';
 import { KPICard } from './KPICard';
 import { SlicerPanel } from './Slicers';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import TextField from '@mui/material/TextField';
+import Card from '@mui/material/Card';
+import Divider from '@mui/material/Divider';
+import Tooltip from '@mui/material/Tooltip';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import TableChartIcon from '@mui/icons-material/TableChart';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
+import AreaChartIcon from '@mui/icons-material/AreaChart';
+import PieChartIcon from '@mui/icons-material/PieChart';
+import BubbleChartIcon from '@mui/icons-material/BubbleChart';
+import RadarIcon from '@mui/icons-material/Radar';
+import SpeedIcon from '@mui/icons-material/Speed';
+import DownloadIcon from '@mui/icons-material/Download';
+import LanguageIcon from '@mui/icons-material/Language';
 
 interface DashboardCanvasProps {
   dashboard: DashboardState;
@@ -15,6 +34,16 @@ interface DashboardCanvasProps {
   onExportExcel?: () => void;
   onExportHTML?: () => void;
 }
+
+const WIDGET_ICONS: Record<WidgetType, React.ReactNode> = {
+  bar: <TableChartIcon sx={{ fontSize: 12 }} />,
+  line: <ShowChartIcon sx={{ fontSize: 12 }} />,
+  area: <AreaChartIcon sx={{ fontSize: 12 }} />,
+  pie: <PieChartIcon sx={{ fontSize: 12 }} />,
+  scatter: <BubbleChartIcon sx={{ fontSize: 12 }} />,
+  radar: <RadarIcon sx={{ fontSize: 12 }} />,
+  kpi: <SpeedIcon sx={{ fontSize: 12 }} />,
+};
 
 export function DashboardCanvas({ dashboard, onDashboardChange, queryFn, onExportExcel, onExportHTML }: DashboardCanvasProps) {
   const [dash, setDash] = useState(dashboard);
@@ -62,7 +91,7 @@ export function DashboardCanvas({ dashboard, onDashboardChange, queryFn, onExpor
   const rows = Math.max(...dash.widgets.map((w) => w.row + w.rowSpan), 2);
 
   return (
-    <div className="flex flex-col gap-4" role="region" aria-label="Dashboard">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }} role="region" aria-label="Dashboard">
       <Toolbar onAdd={addWidget} name={dash.name} onExportExcel={onExportExcel} onExportHTML={onExportHTML} />
       {dash.slicers.length > 0 && (
         <SlicerPanel
@@ -74,42 +103,46 @@ export function DashboardCanvas({ dashboard, onDashboardChange, queryFn, onExpor
           queryFn={queryFn}
         />
       )}
-      <div
-        className="relative min-h-[400px] gap-2"
-        style={{
+      <Box
+        sx={{
           display: 'grid',
           gridTemplateColumns: `repeat(${cols}, 1fr)`,
           gridTemplateRows: `repeat(${rows}, minmax(150px, auto))`,
+          gap: 1,
+          minHeight: 400,
         }}
       >
         {dash.widgets.map((w) => (
-          <div
+          <Card
             key={w.id}
-            className="bg-card rounded-lg border p-2"
-            style={{
+            sx={{
               gridColumn: `${w.col + 1} / span ${w.colSpan}`,
               gridRow: `${w.row + 1} / span ${w.rowSpan}`,
+              p: 1,
             }}
           >
-            <div className="mb-1 flex items-center justify-between">
-              <span className="text-xs font-medium">{w.title}</span>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => setEditingWidget(editingWidget === w.id ? null : w.id)}
-                  className="hover:bg-muted rounded px-1 text-xs"
-                  aria-label={`Edit ${w.title}`}
-                >
-                  ✏️
-                </button>
-                <button
-                  onClick={() => removeWidget(w.id)}
-                  className="hover:bg-muted rounded px-1 text-xs"
-                  aria-label={`Remove ${w.title}`}
-                >
-                  🗑️
-                </button>
-              </div>
-            </div>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+              <Typography variant="caption" sx={{ fontWeight: 600 }}>{w.title}</Typography>
+              <Box sx={{ display: 'flex', gap: 0.25 }}>
+                <Tooltip title="Edit">
+                  <IconButton
+                    size="small"
+                    onClick={() => setEditingWidget(editingWidget === w.id ? null : w.id)}
+                  >
+                    <EditIcon sx={{ fontSize: 14 }} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Remove">
+                  <IconButton
+                    size="small"
+                    onClick={() => removeWidget(w.id)}
+                    color="error"
+                  >
+                    <DeleteIcon sx={{ fontSize: 14 }} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            </Box>
             {editingWidget === w.id ? (
               <WidgetEditor widget={w} onSave={(c) => updateWidget(w.id, c)} />
             ) : w.type === 'kpi' ? (
@@ -122,59 +155,63 @@ export function DashboardCanvas({ dashboard, onDashboardChange, queryFn, onExpor
             ) : (
               <EChartsWidget widget={w} queryFn={queryFn} filters={dash.filters} />
             )}
-          </div>
+          </Card>
         ))}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
-function Toolbar({ 
-  onAdd, 
-  name, 
-  onExportExcel, 
-  onExportHTML 
-}: { 
-  onAdd: (t: WidgetType) => void; 
+function Toolbar({
+  onAdd,
+  name,
+  onExportExcel,
+  onExportHTML,
+}: {
+  onAdd: (t: WidgetType) => void;
   name: string;
   onExportExcel?: () => void;
   onExportHTML?: () => void;
 }) {
   const types: WidgetType[] = ['bar', 'line', 'area', 'pie', 'scatter', 'radar', 'kpi'];
   return (
-    <div className="flex items-center gap-2 border-b pb-2">
-      <h2 className="text-lg font-semibold">{name}</h2>
-      <div className="ml-auto flex gap-1">
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, pb: 1, borderBottom: 1, borderColor: 'divider' }}>
+      <Typography variant="h3">{name}</Typography>
+      <Box sx={{ ml: 'auto', display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
         {types.map((t) => (
-          <button
-            key={t}
-            onClick={() => onAdd(t)}
-            className="hover:bg-muted rounded border px-2 py-1 text-xs"
-            aria-label={`Add ${t}`}
-          >
-            + {t.toUpperCase()}
-          </button>
+          <Tooltip key={t} title={`Add ${t}`}>
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={WIDGET_ICONS[t]}
+              onClick={() => onAdd(t)}
+            >
+              {t.toUpperCase()}
+            </Button>
+          </Tooltip>
         ))}
         {onExportExcel && (
-          <button
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<DownloadIcon />}
             onClick={onExportExcel}
-            className="hover:bg-muted rounded border px-2 py-1 text-xs"
-            aria-label="Export to Excel"
           >
-            📊 Export XLSX
-          </button>
+            Export XLSX
+          </Button>
         )}
         {onExportHTML && (
-          <button
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<LanguageIcon />}
             onClick={onExportHTML}
-            className="hover:bg-muted rounded border px-2 py-1 text-xs"
-            aria-label="Export to HTML"
           >
-            🌐 Export HTML
-          </button>
+            Export HTML
+          </Button>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }
 
@@ -190,39 +227,46 @@ function WidgetEditor({
   const [xField, setXField] = useState(widget.xField ?? '');
   const [yField, setYField] = useState(widget.yField ?? '');
   return (
-    <div className="flex flex-col gap-1">
-      <input
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+      <TextField
+        size="small"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        className="rounded border px-1 py-0.5 text-xs"
         placeholder="Title"
+        sx={{ '& .MuiInputBase-root': { fontSize: 12, height: 28 } }}
       />
-      <textarea
+      <TextField
+        size="small"
+        multiline
+        rows={3}
         value={sql}
         onChange={(e) => setSql(e.target.value)}
-        className="h-16 rounded border px-1 py-0.5 font-mono text-xs"
         placeholder="SQL"
+        sx={{ '& .MuiInputBase-root': { fontSize: 11, fontFamily: 'monospace' } }}
       />
-      <input
+      <TextField
+        size="small"
         value={xField}
         onChange={(e) => setXField(e.target.value)}
-        className="rounded border px-1 py-0.5 text-xs"
         placeholder="X field"
+        sx={{ '& .MuiInputBase-root': { fontSize: 12, height: 28 } }}
       />
-      <input
+      <TextField
+        size="small"
         value={yField}
         onChange={(e) => setYField(e.target.value)}
-        className="rounded border px-1 py-0.5 text-xs"
         placeholder="Y field"
+        sx={{ '& .MuiInputBase-root': { fontSize: 12, height: 28 } }}
       />
-      <button
+      <Button
+        size="small"
+        variant="contained"
         onClick={() =>
           onSave({ title, sql, xField: xField || undefined, yField: yField || undefined })
         }
-        className="bg-primary text-primary-foreground rounded px-2 py-0.5 text-xs"
       >
         Save
-      </button>
-    </div>
+      </Button>
+    </Box>
   );
 }

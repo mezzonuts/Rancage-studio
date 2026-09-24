@@ -2,6 +2,22 @@
 
 import { useBYOK } from '@/lib/byok/context';
 import type { ProviderConfig, BYOKConfig } from '@/lib/byok/types';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import TextField from '@mui/material/TextField';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import Button from '@mui/material/Button';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Slider from '@mui/material/Slider';
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import InfoIcon from '@mui/icons-material/Info';
+import LaunchIcon from '@mui/icons-material/Launch';
+import Link from '@mui/material/Link';
 
 export function BYOKManager() {
   const {
@@ -25,190 +41,186 @@ export function BYOKManager() {
   const hasApiKeyForProvider = !isApiKeyRequired || config.apiKey.trim().length > 0;
 
   return (
-    <div className="bg-card rounded-lg border p-6">
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-xl font-semibold">AI Configuration</h2>
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+        <Typography variant="h2">AI Configuration</Typography>
         {connectionStatus === 'success' && (
-          <span className="inline-flex items-center gap-1 text-sm text-green-600">
-            <StatusIndicator status="connected" /> Connected
-            {availableModels.length > 0 && (
-              <span className="text-muted-foreground ml-1 text-xs">
-                ({availableModels.length} models)
-              </span>
-            )}
-          </span>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'success.main' }}>
+            <CheckCircleIcon sx={{ fontSize: 16 }} />
+            <Typography variant="body2" color="success.main">
+              Connected
+              {availableModels.length > 0 && (
+                <Typography component="span" variant="caption" sx={{ ml: 0.5 }}>
+                  ({availableModels.length} models)
+                </Typography>
+              )}
+            </Typography>
+          </Box>
         )}
         {connectionStatus === 'error' && (
-          <span className="inline-flex items-center gap-1 text-sm text-red-600">
-            <StatusIndicator status="disconnected" /> Connection Failed
-          </span>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'error.main' }}>
+            <ErrorIcon sx={{ fontSize: 16 }} />
+            <Typography variant="body2" color="error.main">Connection Failed</Typography>
+          </Box>
         )}
         {connectionStatus === 'testing' && (
-          <span className="text-muted-foreground inline-flex items-center gap-1 text-sm">
-            <StatusIndicator status="testing" /> Testing...
-          </span>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'text.secondary' }}>
+            <CircularProgress size={16} />
+            <Typography variant="body2" color="text.secondary">Testing...</Typography>
+          </Box>
         )}
-      </div>
+      </Box>
 
       {/* Provider Selector */}
-      <div className="mb-4">
-        <label className="mb-2 block text-sm font-medium">Provider</label>
-        <select
+      <FormControl fullWidth sx={{ mb: 2 }}>
+        <InputLabel>Provider</InputLabel>
+        <Select
           value={config.provider}
+          label="Provider"
           onChange={(e) => setProvider(e.target.value as BYOKConfig['provider'])}
           disabled={isLoading || connectionStatus === 'testing'}
-          className="bg-background focus:border-primary w-full rounded-lg border px-3 py-2 text-sm outline-none"
         >
           {providers.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
+            <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
           ))}
-        </select>
-      </div>
+        </Select>
+      </FormControl>
 
       {/* Base URL */}
-      <div className="mb-4">
-        <label className="mb-2 block text-sm font-medium">Base URL</label>
-        <input
-          type="url"
-          value={config.baseUrl}
-          onChange={(e) => setBaseUrl(e.target.value)}
-          placeholder={getProviderConfig(config.provider).defaultBaseUrl}
-          disabled={isLoading || connectionStatus === 'testing'}
-          className="bg-background focus:border-primary w-full rounded-lg border px-3 py-2 text-sm outline-none"
-        />
-        <p className="text-muted-foreground mt-1 text-xs">
-          Ollama: http://localhost:11434/v1 | LM Studio: http://localhost:1234/v1
-        </p>
-      </div>
+      <TextField
+        fullWidth
+        label="Base URL"
+        type="url"
+        value={config.baseUrl}
+        onChange={(e) => setBaseUrl(e.target.value)}
+        placeholder={getProviderConfig(config.provider).defaultBaseUrl}
+        disabled={isLoading || connectionStatus === 'testing'}
+        sx={{ mb: 2 }}
+      />
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: -1.5, mb: 2 }}>
+        Ollama: http://localhost:11434/v1 | LM Studio: http://localhost:1234/v1
+      </Typography>
 
       {/* API Key */}
       {isApiKeyRequired && (
-        <div className="mb-4">
-          <label className="mb-2 block text-sm font-medium">API Key</label>
-          <input
-            type="password"
-            value={config.apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            placeholder={`Enter ${getProviderConfig(config.provider).name} API key`}
-            disabled={isLoading || connectionStatus === 'testing'}
-            className="bg-background focus:border-primary w-full rounded-lg border px-3 py-2 text-sm outline-none"
-          />
-        </div>
+        <TextField
+          fullWidth
+          label="API Key"
+          type="password"
+          value={config.apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+          placeholder={`Enter ${getProviderConfig(config.provider).name} API key`}
+          disabled={isLoading || connectionStatus === 'testing'}
+          sx={{ mb: 2 }}
+        />
       )}
 
       {/* Model Selection */}
-      <div className="mb-4">
-        <label className="mb-2 block text-sm font-medium">Model</label>
-        {availableModels.length > 0 ? (
-          <>
-            <select
-              value={config.model}
-              onChange={(e) => setModel(e.target.value)}
-              disabled={isLoading || connectionStatus === 'testing'}
-              className="bg-background focus:border-primary w-full rounded-lg border px-3 py-2 text-sm outline-none"
-            >
-              {availableModels.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-            <p className="text-muted-foreground mt-1 text-xs">
-              {availableModels.length} model{availableModels.length !== 1 ? 's' : ''} available —
-              auto-detected
-            </p>
-          </>
-        ) : (
-          <input
-            type="text"
+      {availableModels.length > 0 ? (
+        <FormControl fullWidth sx={{ mb: 2 }}>
+          <InputLabel>Model</InputLabel>
+          <Select
             value={config.model}
+            label="Model"
             onChange={(e) => setModel(e.target.value)}
-            placeholder="Enter model name or ID"
             disabled={isLoading || connectionStatus === 'testing'}
-            className="bg-background focus:border-primary w-full rounded-lg border px-3 py-2 text-sm outline-none"
-          />
-        )}
-      </div>
+          >
+            {availableModels.map((m) => (
+              <MenuItem key={m} value={m}>{m}</MenuItem>
+            ))}
+          </Select>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+            {availableModels.length} model{availableModels.length !== 1 ? 's' : ''} available — auto-detected
+          </Typography>
+        </FormControl>
+      ) : (
+        <TextField
+          fullWidth
+          label="Model"
+          value={config.model}
+          onChange={(e) => setModel(e.target.value)}
+          placeholder="Enter model name or ID"
+          disabled={isLoading || connectionStatus === 'testing'}
+          sx={{ mb: 2 }}
+        />
+      )}
+
       {/* Advanced Settings */}
-      <details className="group mb-4">
-        <summary className="group-open:text-primary cursor-pointer list-none text-sm font-medium select-none">
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="body2" color="primary" sx={{ cursor: 'pointer', fontWeight: 600, mb: 1 }}>
           Advanced Settings (Optional)
-        </summary>
-        <div className="mt-4 space-y-4 pl-4">
-          <div>
-            <label className="mb-2 block text-sm font-medium">Maximum Tokens</label>
-            <input
-              type="number"
-              min={256}
-              max={65536}
-              value={config.maxTokens}
-              onChange={(e) => setMaxTokens(Number(e.target.value))}
-              disabled={isLoading || connectionStatus === 'testing'}
-              className="bg-background focus:border-primary w-full rounded-lg border px-3 py-2 text-sm outline-none"
-            />
-          </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium">
+        </Typography>
+        <Box sx={{ pl: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField
+            fullWidth
+            label="Maximum Tokens"
+            type="number"
+            value={config.maxTokens}
+            onChange={(e) => setMaxTokens(Number(e.target.value))}
+            slotProps={{ htmlInput: { min: 256, max: 65536 } }}
+            disabled={isLoading || connectionStatus === 'testing'}
+            size="small"
+          />
+          <Box>
+            <Typography variant="body2" sx={{ mb: 0.5 }}>
               Temperature ({config.temperature.toFixed(2)})
-            </label>
-            <input
-              type="range"
+            </Typography>
+            <Slider
+              value={config.temperature}
+              onChange={(_, v) => setTemperature(v as number)}
               min={0}
               max={1}
               step={0.01}
-              value={config.temperature}
-              onChange={(e) => setTemperature(parseFloat(e.target.value))}
               disabled={isLoading || connectionStatus === 'testing'}
-              className="accent-primary w-full"
             />
-            <p className="text-muted-foreground mt-1 text-xs">
+            <Typography variant="caption" color="text.secondary">
               Lower = more deterministic, Higher = more creative
-            </p>
-          </div>
-        </div>
-      </details>
+            </Typography>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Action Buttons */}
-      <div className="mt-6 flex items-center gap-3">
-        <button
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 3 }}>
+        <Button
+          variant="contained"
           onClick={() => void testConnection()}
           disabled={!canTest || (isApiKeyRequired && !hasApiKeyForProvider)}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium disabled:opacity-50"
+          startIcon={connectionStatus === 'testing' ? <CircularProgress size={16} color="inherit" /> : <CheckCircleIcon />}
         >
-          <StatusIndicator status={connectionStatus} className="h-4 w-4" />
           {connectionStatus === 'testing' ? 'Testing...' : 'Test Connection'}
-        </button>
+        </Button>
         {connectionStatus === 'success' && (
-          <a
+          <Button
+            variant="outlined"
+            component={Link as any}
             href="/studio"
-            className="bg-secondary text-secondary-foreground hover:bg-secondary/80 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium"
+            endIcon={<LaunchIcon />}
           >
-            Launch Studio →
-          </a>
+            Launch Studio
+          </Button>
         )}
-      </div>
+      </Box>
 
       {/* Error Message */}
       {connectionError && (
-        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <Alert severity="error" sx={{ mt: 2 }}>
           {connectionError}
-        </div>
+        </Alert>
       )}
 
       {/* Info Box */}
-      <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-700">
-        <p className="font-medium">Getting Started:</p>
-        <ol className="mt-2 list-decimal space-y-1 pl-4 text-sm">
-          <li>Select your provider (Ollama for local, OpenAI for cloud)</li>
-          <li>Set base URL (defaults provided for common providers)</li>
-          <li>Add API key if required by provider</li>
-          <li>Click &quot;Test Connection&quot; to verify connectivity</li>
-          <li>If successful, proceed to studio</li>
-        </ol>
-      </div>
-    </div>
+      <Alert severity="info" icon={<InfoIcon />} sx={{ mt: 3 }}>
+        <Typography variant="body2" sx={{ fontWeight: 600 }}>Getting Started:</Typography>
+        <Box component="ol" sx={{ mt: 1, pl: 2, m: 0 }}>
+          <li><Typography variant="body2">Select your provider (Ollama for local, OpenAI for cloud)</Typography></li>
+          <li><Typography variant="body2">Set base URL (defaults provided for common providers)</Typography></li>
+          <li><Typography variant="body2">Add API key if required by provider</Typography></li>
+          <li><Typography variant="body2">Click &quot;Test Connection&quot; to verify connectivity</Typography></li>
+          <li><Typography variant="body2">If successful, proceed to studio</Typography></li>
+        </Box>
+      </Alert>
+    </Box>
   );
 }
 
@@ -257,54 +269,5 @@ function getProviderConfig(providerId: string): ProviderConfig {
   ];
   const found = providers.find((p) => p.id === providerId);
   if (found) return found;
-  // This should never happen since we default to first element, but TypeScript needs assurance
   return providers[0] as ProviderConfig;
-}
-
-interface StatusIndicatorProps {
-  status: 'idle' | 'testing' | 'success' | 'error' | 'connected' | 'disconnected';
-  className?: string;
-}
-
-function StatusIndicator({ status, className }: StatusIndicatorProps) {
-  switch (status) {
-    case 'connected':
-    case 'success':
-      return (
-        <svg className={className} fill="currentColor" viewBox="0 0 20 20">
-          <path
-            fillRule="evenodd"
-            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-          />
-        </svg>
-      );
-    case 'disconnected':
-    case 'error':
-      return (
-        <svg className={className} fill="currentColor" viewBox="0 0 20 20">
-          <path
-            fillRule="evenodd"
-            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.293 7.293a1 1 0 011.414 0L10 8.586l1.293-1.293a1 1 0 111.414 1.414L11.414 10l1.293 1.293a1 1 0 01-1.414 1.414L10 11.414l-1.293 1.293a1 1 0 01-1.414-1.414L8.586 10 7.293 8.707a1 1 0 010-1.414z"
-          />
-        </svg>
-      );
-    case 'testing':
-      return (
-        <svg
-          className={`${className} animate-spin`}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-          />
-        </svg>
-      );
-    default:
-      return <div className={`${className} h-3 w-3 rounded-full bg-gray-300`} />;
-  }
 }
