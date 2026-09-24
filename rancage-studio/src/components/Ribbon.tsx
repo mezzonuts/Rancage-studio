@@ -1,5 +1,81 @@
 'use client';
 
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+
+import ContentPasteIcon from '@mui/icons-material/ContentPaste';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ContentCutIcon from '@mui/icons-material/ContentCut';
+import FormatBoldIcon from '@mui/icons-material/FormatBold';
+import FormatItalicIcon from '@mui/icons-material/FormatItalic';
+import FormatUnderlinedIcon from '@mui/icons-material/FormatUnderlined';
+import StrikethroughSIcon from '@mui/icons-material/StrikethroughS';
+import FormatAlignLeftIcon from '@mui/icons-material/FormatAlignLeft';
+import FormatAlignCenterIcon from '@mui/icons-material/FormatAlignCenter';
+import FormatAlignRightIcon from '@mui/icons-material/FormatAlignRight';
+import MergeIcon from '@mui/icons-material/Merge';
+import WrapTextIcon from '@mui/icons-material/WrapText';
+import FormatClearIcon from '@mui/icons-material/FormatClear';
+import SortIcon from '@mui/icons-material/Sort';
+import FilterAltIcon from '@mui/icons-material/FilterAlt';
+import FilterListOffIcon from '@mui/icons-material/FilterListOff';
+import SearchIcon from '@mui/icons-material/Search';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+import DescriptionIcon from '@mui/icons-material/Description';
+import NoteAddIcon from '@mui/icons-material/NoteAdd';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import SaveIcon from '@mui/icons-material/Save';
+import PrintIcon from '@mui/icons-material/Print';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import CloseIcon from '@mui/icons-material/Close';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import EditIcon from '@mui/icons-material/Edit';
+import HighlightIcon from '@mui/icons-material/Highlight';
+import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
+import SettingsIcon from '@mui/icons-material/Settings';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import ZoomOutIcon from '@mui/icons-material/ZoomOut';
+import LockIcon from '@mui/icons-material/Lock';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
+import ViewColumnIcon from '@mui/icons-material/ViewColumn';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import SpellcheckIcon from '@mui/icons-material/Spellcheck';
+import CommentIcon from '@mui/icons-material/Comment';
+import FunctionsIcon from '@mui/icons-material/Functions';
+import CalculateIcon from '@mui/icons-material/Calculate';
+import TimelineIcon from '@mui/icons-material/Timeline';
+import CodeIcon from '@mui/icons-material/Code';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
+import ChatIcon from '@mui/icons-material/Chat';
+import ReplayIcon from '@mui/icons-material/Replay';
+import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
+import CategoryIcon from '@mui/icons-material/Category';
+import GroupWorkIcon from '@mui/icons-material/GroupWork';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PersonIcon from '@mui/icons-material/Person';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import CropLandscapeIcon from '@mui/icons-material/CropLandscape';
+import AspectRatioIcon from '@mui/icons-material/AspectRatio';
+import FormatColorFillIcon from '@mui/icons-material/FormatColorFill';
+import GridOnIcon from '@mui/icons-material/GridOn';
+import PaletteIcon from '@mui/icons-material/Palette';
+import ViewQuiltIcon from '@mui/icons-material/ViewQuilt';
+import CheckIcon from '@mui/icons-material/Check';
+import PsychologyIcon from '@mui/icons-material/Psychology';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import TableChartIcon from '@mui/icons-material/TableChart';
+import DataObjectIcon from '@mui/icons-material/DataObject';
+import TextFieldsIcon from '@mui/icons-material/TextFields';
+
 export interface RibbonProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
@@ -42,18 +118,15 @@ export interface RibbonProps {
   onAIAnalystAction: (action: string) => void;
   onToggleChat: () => void;
   viewMode: string;
-  // Clipboard
   onCopy?: () => void;
   onCut?: () => void;
   onPaste?: () => void;
-  // Insert/Delete
   onInsertRowAbove?: () => void;
   onInsertRowBelow?: () => void;
   onDeleteRow?: () => void;
   onInsertColLeft?: () => void;
   onInsertColRight?: () => void;
   onDeleteCol?: () => void;
-  // Find
   onFind?: () => void;
 }
 
@@ -70,268 +143,46 @@ const TABS = [
   'AI Analyst',
 ];
 
-/* ─── Shared SVG icons ─── */
 const I = {
-  // Clipboard group
-  clipboard: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
-      <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
-      <rect x="8" y="2" width="8" height="4" rx="1" />
-    </svg>
-  ),
-  copy: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <rect x="9" y="9" width="13" height="13" rx="2" />
-      <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-    </svg>
-  ),
-  cut: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <circle cx="6" cy="6" r="3" />
-      <circle cx="6" cy="18" r="3" />
-      <line x1="20" y1="4" x2="8.12" y2="15.88" />
-      <line x1="14.47" y1="14.48" x2="20" y2="20" />
-      <line x1="8.12" y1="8.12" x2="12" y2="12" />
-    </svg>
-  ),
-  // Font group
-  bold: (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      className="h-4 w-4"
-    >
-      <path d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z" />
-      <path d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z" />
-    </svg>
-  ),
-  italic: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <line x1="19" y1="4" x2="10" y2="4" />
-      <line x1="14" y1="20" x2="5" y2="20" />
-      <line x1="15" y1="4" x2="9" y2="20" />
-    </svg>
-  ),
-  underline: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M6 3v7a6 6 0 006 6 6 6 0 006-6V3" />
-      <line x1="4" y1="21" x2="20" y2="21" />
-    </svg>
-  ),
-  strikethrough: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M17.3 4.9c-2.3-.6-4.4-1-6.2-.9-2.7 0-5.3.7-5.3 3.6 0 1.5 1.5 2.8 4.2 3.4" />
-      <line x1="2" y1="12" x2="22" y2="12" />
-      <path d="M8.5 16.4c.6 1.6 2.3 2.6 4.5 2.6 2.7 0 5.3-.9 5.3-3.6 0-.7-.2-1.4-.6-2" />
-    </svg>
-  ),
-  // Alignment
-  alignLeft: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <line x1="17" y1="10" x2="3" y2="10" />
-      <line x1="21" y1="6" x2="3" y2="6" />
-      <line x1="21" y1="14" x2="3" y2="14" />
-      <line x1="17" y1="18" x2="3" y2="18" />
-    </svg>
-  ),
-  alignCenter: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <line x1="18" y1="10" x2="6" y2="10" />
-      <line x1="21" y1="6" x2="3" y2="6" />
-      <line x1="21" y1="14" x2="3" y2="14" />
-      <line x1="18" y1="18" x2="6" y2="18" />
-    </svg>
-  ),
-  alignRight: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <line x1="21" y1="10" x2="7" y2="10" />
-      <line x1="21" y1="6" x2="3" y2="6" />
-      <line x1="21" y1="14" x2="3" y2="14" />
-      <line x1="21" y1="18" x2="7" y2="18" />
-    </svg>
-  ),
-  merge: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <line x1="12" y1="3" x2="12" y2="21" />
-    </svg>
-  ),
-  wrap: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M3 6h18M3 12h12M3 18h16" />
-    </svg>
-  ),
-  // Number
-  format: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <path d="M3 9h18M9 3v18" />
-    </svg>
-  ),
-  style: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-    </svg>
-  ),
-  // Cells
-  insert: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <path d="M12 8v8M8 12h8" />
-    </svg>
-  ),
-  delete: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <path d="M8 12h8" />
-    </svg>
-  ),
-  settings: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
-    </svg>
-  ),
-  // Editing
-  sort: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M11 5h10M11 9h7M11 13h4M3 17l4 4 4-4M7 3v18" />
-    </svg>
-  ),
-  filter: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-    </svg>
-  ),
-  find: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <circle cx="11" cy="11" r="8" />
-      <path d="M21 21l-4.35-4.35" />
-    </svg>
-  ),
-  // File
-  file: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-    </svg>
-  ),
-  newFile: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
-      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <line x1="12" y1="18" x2="12" y2="12" />
-      <line x1="9" y1="15" x2="15" y2="15" />
-    </svg>
-  ),
-  open: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
-    </svg>
-  ),
-  save: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-      <polyline points="17 21 17 13 7 13 7 21" />
-      <polyline points="7 3 7 8 15 8" />
-    </svg>
-  ),
-  print: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <polyline points="6 9 6 2 18 2 18 9" />
-      <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
-      <rect x="6" y="14" width="12" height="8" />
-    </svg>
-  ),
-  export: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
-    </svg>
-  ),
-  close: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M18 6L6 18M6 6l12 12" />
-    </svg>
-  ),
-  // Sort
-  sortAsc: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M12 19V5M5 12l7-7 7 7" />
-    </svg>
-  ),
-  sortDesc: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M12 5v14M19 12l-7 7-7-7" />
-    </svg>
-  ),
-  clearFilter: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M4 4h16M6 10h12M8 16h8" />
-    </svg>
-  ),
-  // Draw
-  pen: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-    </svg>
-  ),
-  highlighter: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M15.5 4.5l4 4L8 20H4v-4L15.5 4.5z" />
-      <line x1="18" y1="2" x2="22" y2="6" />
-    </svg>
-  ),
-  eraser: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M20 20H7L3 16a1 1 0 010-1.41l9.59-9.59a2 2 0 012.82 0l5 5a2 2 0 010 2.82L14 20" />
-    </svg>
-  ),
-  // Page Layout
-  margins: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <path d="M9 3v18M15 3v18M3 9h18M3 15h18" />
-    </svg>
-  ),
-  orientation: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <rect x="4" y="4" width="16" height="16" rx="2" />
-    </svg>
-  ),
-  size: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M21 3H3v18h18V3z" />
-      <path d="M9 3v18" />
-      <path d="M15 3v18" />
-      <path d="M3 9h18" />
-      <path d="M3 15h18" />
-    </svg>
-  ),
-  bg: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <line x1="3" y1="3" x2="21" y2="21" />
-    </svg>
-  ),
-  gridlines: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <line x1="9" y1="3" x2="9" y2="21" />
-      <line x1="15" y1="3" x2="15" y2="21" />
-      <line x1="3" y1="9" x2="21" y2="9" />
-      <line x1="3" y1="15" x2="21" y2="15" />
-    </svg>
-  ),
-  // Formula
-  function: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <text x="4" y="17" fontSize="14" fontWeight="bold" fill="currentColor" stroke="none">
-        fx
-      </text>
-    </svg>
-  ),
+  clipboard: <ContentPasteIcon className="h-5 w-5" />,
+  copy: <ContentCopyIcon className="h-4 w-4" />,
+  cut: <ContentCutIcon className="h-4 w-4" />,
+  bold: <FormatBoldIcon className="h-4 w-4" />,
+  italic: <FormatItalicIcon className="h-4 w-4" />,
+  underline: <FormatUnderlinedIcon className="h-4 w-4" />,
+  strikethrough: <StrikethroughSIcon className="h-4 w-4" />,
+  alignLeft: <FormatAlignLeftIcon className="h-4 w-4" />,
+  alignCenter: <FormatAlignCenterIcon className="h-4 w-4" />,
+  alignRight: <FormatAlignRightIcon className="h-4 w-4" />,
+  merge: <MergeIcon className="h-4 w-4" />,
+  wrap: <WrapTextIcon className="h-4 w-4" />,
+  format: <ViewQuiltIcon className="h-4 w-4" />,
+  style: <PaletteIcon className="h-4 w-4" />,
+  insert: <AddIcon className="h-4 w-4" />,
+  delete: <DeleteIcon className="h-4 w-4" />,
+  settings: <SettingsIcon className="h-4 w-4" />,
+  sort: <SortIcon className="h-4 w-4" />,
+  filter: <FilterAltIcon className="h-4 w-4" />,
+  find: <SearchIcon className="h-4 w-4" />,
+  file: <DescriptionIcon className="h-4 w-4" />,
+  newFile: <NoteAddIcon className="h-5 w-5" />,
+  open: <FolderOpenIcon className="h-4 w-4" />,
+  save: <SaveIcon className="h-4 w-4" />,
+  print: <PrintIcon className="h-4 w-4" />,
+  export: <FileDownloadIcon className="h-4 w-4" />,
+  close: <CloseIcon className="h-4 w-4" />,
+  sortAsc: <ArrowUpwardIcon className="h-4 w-4" />,
+  sortDesc: <ArrowDownwardIcon className="h-4 w-4" />,
+  clearFilter: <FilterListOffIcon className="h-4 w-4" />,
+  pen: <EditIcon className="h-4 w-4" />,
+  highlighter: <HighlightIcon className="h-4 w-4" />,
+  eraser: <CleaningServicesIcon className="h-4 w-4" />,
+  margins: <ViewModuleIcon className="h-4 w-4" />,
+  orientation: <CropLandscapeIcon className="h-4 w-4" />,
+  size: <AspectRatioIcon className="h-4 w-4" />,
+  bg: <FormatColorFillIcon className="h-4 w-4" />,
+  gridlines: <GridOnIcon className="h-4 w-4" />,
+  function: <FunctionsIcon className="h-4 w-4" />,
   sum: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
       <text x="3" y="18" fontSize="16" fontWeight="bold" fill="currentColor" stroke="none">
@@ -339,240 +190,30 @@ const I = {
       </text>
     </svg>
   ),
-  trace: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <circle cx="6" cy="6" r="2" />
-      <circle cx="18" cy="18" r="2" />
-      <path d="M8 8l8 8" />
-    </svg>
-  ),
-  showFormula: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M4 19h16M4 15h8M12 5v14" />
-    </svg>
-  ),
-  calc: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <rect x="4" y="2" width="16" height="20" rx="2" />
-      <line x1="8" y1="6" x2="16" y2="6" />
-      <circle cx="8" cy="11" r="1" />
-      <circle cx="12" cy="11" r="1" />
-      <circle cx="16" cy="11" r="1" />
-      <circle cx="8" cy="16" r="1" />
-      <circle cx="12" cy="16" r="1" />
-      <circle cx="16" cy="16" r="1" />
-    </svg>
-  ),
-  nameManager: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  ),
-  // Data
-  dataImport: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
-    </svg>
-  ),
-  removeDup: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <rect x="3" y="3" width="7" height="7" />
-      <rect x="14" y="3" width="7" height="7" />
-      <rect x="3" y="14" width="7" height="7" />
-      <path d="M17.5 14v7M14 17.5h7" />
-    </svg>
-  ),
-  group: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M18 3v18M3 9h18M3 15h18" />
-    </svg>
-  ),
-  validate: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-    </svg>
-  ),
-  // Review
-  spellcheck: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M12 2l3 7h7l-5.5 4.5 2 7L12 16l-6.5 4.5 2-7L2 9h7z" />
-    </svg>
-  ),
-  comment: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-    </svg>
-  ),
-  lock: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <rect x="3" y="11" width="18" height="11" rx="2" />
-      <path d="M7 11V7a5 5 0 0110 0v4" />
-    </svg>
-  ),
-  // View
-  eye: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  ),
-  zoomIn: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-      <line x1="11" y1="8" x2="11" y2="14" />
-      <line x1="8" y1="11" x2="14" y2="11" />
-    </svg>
-  ),
-  zoomOut: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <circle cx="11" cy="11" r="8" />
-      <line x1="21" y1="21" x2="16.65" y2="16.65" />
-      <line x1="8" y1="11" x2="14" y2="11" />
-    </svg>
-  ),
-  freeze: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M12 2v20M2 12h20M12 2l8 8M12 22l-8-8" />
-    </svg>
-  ),
-  split: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <line x1="12" y1="3" x2="12" y2="21" />
-    </svg>
-  ),
-  dashboard: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <path d="M18 20V10M12 20V4M6 20v-6" />
-    </svg>
-  ),
-  // AI Analyst
-  aiBrain: (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className="h-5 w-5"
-      style={{ color: 'var(--accent)' }}
-    >
-      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-    </svg>
-  ),
-  aiDollar: (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className="h-4 w-4"
-      style={{ color: 'var(--accent)' }}
-    >
-      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
-    </svg>
-  ),
-  aiChart: (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className="h-4 w-4"
-      style={{ color: 'var(--accent)' }}
-    >
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-    </svg>
-  ),
-  chat: (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className="h-4 w-4"
-      style={{ color: 'var(--accent)' }}
-    >
-      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-    </svg>
-  ),
-  python: (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className="h-4 w-4"
-      style={{ color: 'var(--accent)' }}
-    >
-      <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
-    </svg>
-  ),
-  template: (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className="h-4 w-4"
-      style={{ color: 'var(--accent)' }}
-    >
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <line x1="3" y1="9" x2="21" y2="9" />
-      <line x1="9" y1="21" x2="9" y2="9" />
-    </svg>
-  ),
-  replay: (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className="h-4 w-4"
-      style={{ color: 'var(--accent)' }}
-    >
-      <path d="M1 4v6h6M23 20v-6h-6" />
-      <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" />
-    </svg>
-  ),
-  // Misc
-  search: (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className="h-[14px] w-[14px]"
-    >
-      <circle cx="11" cy="11" r="8" />
-      <path d="M21 21l-4.35-4.35" />
-    </svg>
-  ),
-  bell: (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className="h-[14px] w-[14px]"
-    >
-      <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
-    </svg>
-  ),
-  dots: (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className="h-[14px] w-[14px]"
-    >
-      <circle cx="12" cy="12" r="1" />
-      <circle cx="19" cy="12" r="1" />
-      <circle cx="5" cy="12" r="1" />
-    </svg>
-  ),
+  trace: <TimelineIcon className="h-4 w-4" />,
+  showFormula: <CodeIcon className="h-4 w-4" />,
+  calc: <CalculateIcon className="h-4 w-4" />,
+  nameManager: <PersonIcon className="h-4 w-4" />,
+  dataImport: <CloudDownloadIcon className="h-4 w-4" />,
+  removeDup: <CategoryIcon className="h-4 w-4" />,
+  group: <GroupWorkIcon className="h-4 w-4" />,
+  validate: <CheckCircleIcon className="h-4 w-4" />,
+  spellcheck: <SpellcheckIcon className="h-4 w-4" />,
+  comment: <CommentIcon className="h-4 w-4" />,
+  lock: <LockIcon className="h-4 w-4" />,
+  eye: <VisibilityIcon className="h-4 w-4" />,
+  zoomIn: <ZoomInIcon className="h-4 w-4" />,
+  zoomOut: <ZoomOutIcon className="h-4 w-4" />,
+  freeze: <LockOpenIcon className="h-4 w-4" />,
+  split: <ViewColumnIcon className="h-4 w-4" />,
+  dashboard: <DashboardIcon className="h-4 w-4" />,
+  aiBrain: <PsychologyIcon className="h-5 w-5" style={{ color: 'var(--accent)' }} />,
+  aiDollar: <AttachMoneyIcon className="h-4 w-4" style={{ color: 'var(--accent)' }} />,
+  aiChart: <ShowChartIcon className="h-4 w-4" style={{ color: 'var(--accent)' }} />,
+  chat: <ChatIcon className="h-4 w-4" style={{ color: 'var(--accent)' }} />,
+  python: <CodeIcon className="h-4 w-4" style={{ color: 'var(--accent)' }} />,
+  template: <DashboardCustomizeIcon className="h-4 w-4" style={{ color: 'var(--accent)' }} />,
+  replay: <ReplayIcon className="h-4 w-4" style={{ color: 'var(--accent)' }} />,
   symbol: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
       <text x="4" y="18" fontSize="16" fill="currentColor" stroke="none">
@@ -580,11 +221,7 @@ const I = {
       </text>
     </svg>
   ),
-  check: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  ),
+  check: <CheckIcon className="h-4 w-4" />,
 };
 
 function R({
@@ -603,16 +240,37 @@ function R({
   accent?: boolean;
 }) {
   return (
-    <button
+    <Button
       className={`ribbon-btn ${small ? 'ribbon-btn-sm' : ''} ${active ? 'active' : ''}`}
       onClick={onClick}
-      style={accent ? { color: 'var(--accent)' } : undefined}
+      disableRipple
+      disableElevation
+      sx={{
+        textTransform: 'none',
+        minWidth: small ? 32 : 44,
+        padding: small ? '4px' : '4px 8px',
+        borderRadius: '6px',
+        flexDirection: 'column',
+        gap: '2px',
+        lineHeight: 'normal',
+        color: accent ? 'var(--accent)' : undefined,
+        '&:hover': {
+          background: 'var(--bg-grid-hover)',
+        },
+        '&:active': {
+          background: 'var(--accent-bg)',
+        },
+        '&.active': {
+          background: 'var(--accent-bg)',
+          outline: '1px solid var(--accent)',
+        },
+      }}
     >
       {icon}
       <span style={{ fontSize: small ? 10 : 10.5, color: accent ? 'var(--accent)' : undefined }}>
         {label}
       </span>
-    </button>
+    </Button>
   );
 }
 
@@ -625,7 +283,6 @@ function G({ children, label }: { children: React.ReactNode; label: string }) {
   );
 }
 
-/* ─── Tab-specific ribbon content ─── */
 function FileRibbon({
   onNew,
   onImport,
@@ -778,12 +435,38 @@ function HomeRibbon(props: RibbonProps) {
             <option>Text</option>
           </select>
           <div style={{ display: 'flex', gap: 2 }}>
-            <button className="ribbon-btn ribbon-btn-sm" title="Increase Decimal">
+            <Button
+              className="ribbon-btn ribbon-btn-sm"
+              title="Increase Decimal"
+              disableRipple
+              disableElevation
+              sx={{
+                textTransform: 'none',
+                minWidth: 32,
+                padding: '4px',
+                borderRadius: '6px',
+                flexDirection: 'column',
+                '&:hover': { background: 'var(--bg-grid-hover)' },
+              }}
+            >
               <span className="mono-sm">.0→.00</span>
-            </button>
-            <button className="ribbon-btn ribbon-btn-sm" title="Decrease Decimal">
+            </Button>
+            <Button
+              className="ribbon-btn ribbon-btn-sm"
+              title="Decrease Decimal"
+              disableRipple
+              disableElevation
+              sx={{
+                textTransform: 'none',
+                minWidth: 32,
+                padding: '4px',
+                borderRadius: '6px',
+                flexDirection: 'column',
+                '&:hover': { background: 'var(--bg-grid-hover)' },
+              }}
+            >
               <span className="mono-sm">.00→.0</span>
-            </button>
+            </Button>
           </div>
         </div>
       </G>
@@ -1136,8 +819,9 @@ function AIAnalystRibbon(props: RibbonProps) {
   );
 }
 
-/* ─── Main Ribbon ─── */
 export function Ribbon(props: RibbonProps) {
+  const activeTabIndex = TABS.indexOf(props.activeTab);
+
   return (
     <div className="ribbon">
       {/* Tab Bar */}
@@ -1148,23 +832,78 @@ export function Ribbon(props: RibbonProps) {
             <path d="M8 10h12M8 14h8M8 18h10" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </div>
-        {TABS.map((t) => (
-          <button
-            key={t}
-            className={`ribbon-tab ${props.activeTab === t ? 'active' : ''} ${t === 'AI Analyst' ? 'ai-tab' : ''}`}
-            onClick={() => props.onTabChange(t)}
-          >
-            {t === 'AI Analyst' && (
-              <span className={`ai-tab-dot ${props.aiProcessing ? 'processing' : ''}`} />
-            )}
-            {t}
-          </button>
-        ))}
+        <Tabs
+          value={activeTabIndex >= 0 ? activeTabIndex : false}
+          onChange={(_, newValue) => {
+            if (typeof newValue === 'number') {
+              props.onTabChange(TABS[newValue]!);
+            }
+          }}
+          variant="scrollable"
+          scrollButtons="auto"
+          slotProps={{ indicator: { sx: { display: 'none' } } }}
+          sx={{
+            minHeight: 36,
+            flex: 1,
+            '& .MuiTab-root': {
+              minHeight: 36,
+              padding: '0 16px',
+              fontSize: 12.5,
+              fontWeight: 500,
+              color: 'var(--text-ribbon)',
+              textTransform: 'none',
+              fontFamily: 'var(--font-sans)',
+              transition: 'background 0.12s',
+              position: 'relative',
+              '&:hover': { background: 'var(--bg-grid-hover)' },
+              '&.Mui-selected': {
+                color: 'var(--text-ribbon-active)',
+                fontWeight: 600,
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 16,
+                  right: 16,
+                  height: '2.5px',
+                  background: 'var(--text-ribbon-active)',
+                  borderRadius: '2px 2px 0 0',
+                },
+              },
+              '&.ai-tab.Mui-selected': {
+                color: 'var(--accent)',
+                '&::after': { background: 'var(--accent)' },
+              },
+            },
+          }}
+        >
+          {TABS.map((t) => (
+            <Tab
+              key={t}
+              disableRipple
+              className={`ribbon-tab ${t === 'AI Analyst' ? 'ai-tab' : ''}`}
+              label={
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {t === 'AI Analyst' && (
+                    <span className={`ai-tab-dot ${props.aiProcessing ? 'processing' : ''}`} />
+                  )}
+                  {t}
+                </span>
+              }
+            />
+          ))}
+        </Tabs>
         <div className="ribbon-spacer" />
         <div className="ribbon-tabs-right">
-          <button className="ribbon-tab-right">{I.search}</button>
-          <button className="ribbon-tab-right">{I.bell}</button>
-          <button className="ribbon-tab-right">{I.dots}</button>
+          <IconButton className="ribbon-tab-right" disableRipple size="small">
+            <SearchIcon sx={{ fontSize: 14 }} />
+          </IconButton>
+          <IconButton className="ribbon-tab-right" disableRipple size="small">
+            <NotificationsIcon sx={{ fontSize: 14 }} />
+          </IconButton>
+          <IconButton className="ribbon-tab-right" disableRipple size="small">
+            <MoreHorizIcon sx={{ fontSize: 14 }} />
+          </IconButton>
         </div>
       </div>
 
@@ -1217,24 +956,25 @@ export function Ribbon(props: RibbonProps) {
           cursor: default;
         }
         .ribbon-tab {
-          padding: 0 16px;
-          height: 36px;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 12.5px;
-          font-weight: 500;
-          color: var(--text-ribbon);
-          cursor: pointer;
-          position: relative;
-          transition: background 0.12s;
-          user-select: none;
-          border: none;
-          background: transparent;
-          font-family: var(--font-sans);
+          padding: 0 16px !important;
+          height: 36px !important;
+          display: flex !important;
+          align-items: center !important;
+          gap: 6px !important;
+          font-size: 12.5px !important;
+          font-weight: 500 !important;
+          color: var(--text-ribbon) !important;
+          cursor: pointer !important;
+          position: relative !important;
+          transition: background 0.12s !important;
+          user-select: none !important;
+          border: none !important;
+          background: transparent !important;
+          font-family: var(--font-sans) !important;
+          min-width: 0 !important;
         }
-        .ribbon-tab:hover { background: var(--bg-grid-hover); }
-        .ribbon-tab.active { color: var(--text-ribbon-active); font-weight: 600; }
+        .ribbon-tab:hover { background: var(--bg-grid-hover) !important; }
+        .ribbon-tab.active { color: var(--text-ribbon-active) !important; font-weight: 600 !important; }
         .ribbon-tab.active::after {
           content: '';
           position: absolute;
@@ -1245,8 +985,8 @@ export function Ribbon(props: RibbonProps) {
           background: var(--text-ribbon-active);
           border-radius: 2px 2px 0 0;
         }
-        .ribbon-tab.ai-tab.active { color: var(--accent); }
-        .ribbon-tab.ai-tab.active::after { background: var(--accent); }
+        .ribbon-tab.ai-tab.active { color: var(--accent) !important; }
+        .ribbon-tab.ai-tab.active::after { background: var(--accent) !important; }
         .ai-tab-dot {
           width: 6px;
           height: 6px;
@@ -1265,21 +1005,21 @@ export function Ribbon(props: RibbonProps) {
           padding: 0 12px;
         }
         .ribbon-tab-right {
-          padding: 4px 12px;
-          border-radius: 6px;
-          font-size: 12px;
-          font-weight: 500;
-          color: var(--text-secondary);
-          cursor: pointer;
-          background: transparent;
-          border: none;
-          font-family: var(--font-sans);
-          transition: all 0.12s;
-          display: flex;
-          align-items: center;
-          gap: 4px;
+          padding: 4px 12px !important;
+          border-radius: 6px !important;
+          font-size: 12px !important;
+          font-weight: 500 !important;
+          color: var(--text-secondary) !important;
+          cursor: pointer !important;
+          background: transparent !important;
+          border: none !important;
+          font-family: var(--font-sans) !important;
+          transition: all 0.12s !important;
+          display: flex !important;
+          align-items: center !important;
+          gap: 4px !important;
         }
-        .ribbon-tab-right:hover { background: var(--bg-grid-hover); color: var(--text-primary); }
+        .ribbon-tab-right:hover { background: var(--bg-grid-hover) !important; color: var(--text-primary) !important; }
         .ribbon-toolbar {
           display: flex;
           align-items: stretch;
@@ -1319,34 +1059,35 @@ export function Ribbon(props: RibbonProps) {
           padding: 4px 0;
         }
         .ribbon-btn {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 2px;
-          padding: 4px 8px;
-          border-radius: 6px;
-          cursor: pointer;
-          transition: background 0.12s;
-          background: transparent;
-          border: none;
-          font-family: var(--font-sans);
-          min-width: 44px;
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: center !important;
+          justify-content: center !important;
+          gap: 2px !important;
+          padding: 4px 8px !important;
+          border-radius: 6px !important;
+          cursor: pointer !important;
+          transition: background 0.12s !important;
+          background: transparent !important;
+          border: none !important;
+          font-family: var(--font-sans) !important;
+          min-width: 44px !important;
+          box-shadow: none !important;
         }
-        .ribbon-btn:hover { background: var(--bg-grid-hover); }
-        .ribbon-btn:active { background: var(--accent-bg); }
-        .ribbon-btn.active { background: var(--accent-bg); outline: 1px solid var(--accent); }
+        .ribbon-btn:hover { background: var(--bg-grid-hover) !important; }
+        .ribbon-btn:active { background: var(--accent-bg) !important; }
+        .ribbon-btn.active { background: var(--accent-bg) !important; outline: 1px solid var(--accent) !important; }
         .ribbon-btn svg { width: 20px; height: 20px; color: var(--text-secondary); }
         .ribbon-btn:hover svg { color: var(--text-primary); }
         .ribbon-btn span { font-size: 10.5px; font-weight: 500; color: var(--text-secondary); white-space: nowrap; }
         .ribbon-btn:hover span { color: var(--text-primary); }
         .ribbon-btn-paste {
-          flex-direction: column;
-          padding: 4px 12px;
-          min-width: 52px;
+          flex-direction: column !important;
+          padding: 4px 12px !important;
+          min-width: 52px !important;
         }
         .ribbon-btn-paste svg { width: 28px; height: 28px; color: var(--accent); }
-        .ribbon-btn-sm { min-width: 32px; padding: 4px; }
+        .ribbon-btn-sm { min-width: 32px !important; padding: 4px !important; }
         .ribbon-btn-sm svg { width: 16px; height: 16px; }
         .ribbon-select {
           padding: 3px 6px;
