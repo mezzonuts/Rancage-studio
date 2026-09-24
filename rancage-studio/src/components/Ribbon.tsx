@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Button from '@mui/material/Button';
@@ -152,10 +153,20 @@ export interface RibbonProps {
   onDeleteCol?: () => void;
   onMergeCells?: () => void;
   onAutoSum?: () => void;
+  onAutoAverage?: () => void;
+  onAutoCount?: () => void;
+  onAutoMax?: () => void;
+  onAutoMin?: () => void;
+  onFillDown?: () => void;
+  onFillRight?: () => void;
+  onFillUp?: () => void;
+  onFillLeft?: () => void;
   onClearAll?: () => void;
   onClearContents?: () => void;
   onClearFormats?: () => void;
   onFind?: () => void;
+  onFormatRowHeight?: (h: number) => void;
+  onFormatColWidth?: (w: number) => void;
 }
 
 const TABS = [
@@ -426,7 +437,144 @@ function RibbonToggle({
   );
 }
 
+function RibbonDropdown({
+  label,
+  icon,
+  children,
+  align,
+}: {
+  label: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+  align?: 'left' | 'right';
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
+      <RibbonBtn
+        icon={icon}
+        label={label}
+        size="sm"
+        dropDown
+        onClick={() => setOpen(!open)}
+      />
+      {open && (
+        <div
+          className="ribbon-dropdown-menu"
+          style={{ left: align === 'right' ? 'auto' : 0, right: align === 'right' ? 0 : 'auto' }}
+          onClick={() => setOpen(false)}
+        >
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MenuItem({
+  label,
+  onClick,
+  icon,
+  disabled,
+}: {
+  label: string;
+  onClick?: () => void;
+  icon?: React.ReactNode;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      className="ribbon-menu-item"
+      onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+      disabled={disabled}
+      type="button"
+    >
+      {icon && <span className="ribbon-menu-item-icon">{icon}</span>}
+      <span>{label}</span>
+    </button>
+  );
+}
+
+function MenuSeparator() {
+  return <div className="ribbon-menu-separator" />;
+}
+
+function ColorPalette({
+  onSelect,
+  onClose,
+}: {
+  onSelect: (color: string) => void;
+  onClose: () => void;
+}) {
+  const themeColors = [
+    ['#ffffff', '#000000', '#44546a', '#4472c4', '#ed7d31', '#a5a5a5', '#ffc000', '#5b9bd5', '#70ad47', '#264478'],
+    ['#f2f2f2', '#7f7f7f', '#d6e4f0', '#dce6f1', '#fce4d6', '#ededed', '#fff2cc', '#deeaf6', '#e2efda', '#d6e4f0'],
+    ['#d8d8d8', '#595959', '#adb9ca', '#b4c6e7', '#f8cbad', '#dbdbdb', '#ffe699', '#bdd7ee', '#c5e0b3', '#adb9ca'],
+    ['#bfbfbf', '#3f3f3f', '#8496b0', '#8eaadb', '#f4b183', '#c9c9c9', '#ffd966', '#9cc3e5', '#a8d08d', '#8496b0'],
+    ['#a5a5a5', '#262626', '#5b6e85', '#2f5496', '#c55a11', '#7b7b7b', '#c9b037', '#2e75b6', '#538135', '#264478'],
+    ['#7f7f7f', '#0c0c0c', '#2f3e50', '#222a35', '#833c0c', '#525252', '#806000', '#1f4e79', '#375623', '#17375e'],
+  ];
+  const standardColors = ['#c00000', '#ff0000', '#ff6600', '#ffc000', '#92d050', '#00b050', '#00b0f0', '#0070c0', '#002060', '#7030a0'];
+
+  return (
+    <div className="color-palette" onClick={(e) => e.stopPropagation()}>
+      <button className="ribbon-menu-item" onClick={() => { onSelect(''); onClose(); }} type="button">No Fill</button>
+      <div className="color-palette-label">Theme Colors</div>
+      <div className="color-palette-grid">
+        {themeColors.map((row, ri) =>
+          row.map((c, ci) => (
+            <button
+              key={`${ri}-${ci}`}
+              className="color-palette-swatch"
+              style={{ background: c }}
+              onClick={() => { onSelect(c); onClose(); }}
+              type="button"
+              title={c}
+            />
+          ))
+        )}
+      </div>
+      <div className="color-palette-label">Standard Colors</div>
+      <div className="color-palette-grid" style={{ gridTemplateColumns: 'repeat(10, 1fr)' }}>
+        {standardColors.map((c) => (
+          <button
+            key={c}
+            className="color-palette-swatch"
+            style={{ background: c }}
+            onClick={() => { onSelect(c); onClose(); }}
+            type="button"
+            title={c}
+          />
+        ))}
+      </div>
+      <MenuSeparator />
+      <label className="ribbon-menu-item" style={{ cursor: 'pointer' }}>
+        More Colors...
+        <input
+          type="color"
+          style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+          onChange={(e) => { onSelect(e.target.value); onClose(); }}
+        />
+      </label>
+    </div>
+  );
+}
+
 function HomeRibbon(props: RibbonProps) {
+  const [fillColor, setFillColor] = useState('#facc15');
+  const [textColor, setTextColor] = useState('#ef4444');
+
   return (
     <>
       {/* ─── Clipboard ─── */}
@@ -456,6 +604,8 @@ function HomeRibbon(props: RibbonProps) {
               <option value="Arial">Arial</option>
               <option value="Times New Roman">Times New Roman</option>
               <option value="Calibri">Calibri</option>
+              <option value="Roboto">Roboto</option>
+              <option value="Aptos">Aptos</option>
             </select>
             <select
               className="ribbon-select ribbon-select-sm"
@@ -475,13 +625,27 @@ function HomeRibbon(props: RibbonProps) {
             <RibbonToggle icon={I.underline} active={props.underline} onClick={props.onToggleUnderline} title="Underline" />
             <div className="rb-sep-v" />
             <RibbonToggle icon={I.borderGrid} title="Borders" />
-            <div className="rb-color-btn" title="Fill Color" onClick={() => props.onFillColor?.('#facc15')}>
-              <FormatColorFillIcon sx={{ fontSize: 14 }} />
-              <span className="rb-color-stripe" style={{ background: '#facc15' }} />
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <div
+                className="rb-color-btn"
+                title="Fill Color"
+                onClick={() => { props.onFillColor?.(fillColor); }}
+                style={{ cursor: 'pointer' }}
+              >
+                <FormatColorFillIcon sx={{ fontSize: 14 }} />
+                <span className="rb-color-stripe" style={{ background: fillColor }} />
+              </div>
             </div>
-            <div className="rb-color-btn" title="Font Color" onClick={() => props.onTextColor?.('#ef4444')}>
-              <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1 }}>A</span>
-              <span className="rb-color-stripe" style={{ background: '#ef4444' }} />
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <div
+                className="rb-color-btn"
+                title="Font Color"
+                onClick={() => { props.onTextColor?.(textColor); }}
+                style={{ cursor: 'pointer' }}
+              >
+                <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1 }}>A</span>
+                <span className="rb-color-stripe" style={{ background: textColor }} />
+              </div>
             </div>
           </div>
         </div>
@@ -522,6 +686,7 @@ function HomeRibbon(props: RibbonProps) {
             onChange={(e) => props.onNumberFormatChange(e.target.value)}
           >
             <option>General</option>
+            <option>Number</option>
             <option>Currency</option>
             <option>Currency ($)</option>
             <option>Percentage</option>
@@ -548,10 +713,31 @@ function HomeRibbon(props: RibbonProps) {
           <RibbonBtn icon={<ViewQuiltIcon sx={{ fontSize: 18 }} />} label="Conditional" dropDown />
           <RibbonBtn icon={<PaletteIcon sx={{ fontSize: 18 }} />} label="Format as Table" dropDown />
           <div className="rg-cell-styles">
-            <div className="rg-style-box rg-style-normal">Normal</div>
-            <div className="rg-style-box rg-style-bad">Bad</div>
-            <div className="rg-style-box rg-style-good">Good</div>
-            <div className="rg-style-box rg-style-neutral">Neutral</div>
+            <div className="rg-style-box rg-style-normal" title="Normal">Normal</div>
+            <div
+              className="rg-style-box rg-style-bad"
+              title="Bad - Red background"
+              onClick={() => props.onFillColor?.('#fff2f2')}
+              style={{ cursor: 'pointer' }}
+            >
+              Bad
+            </div>
+            <div
+              className="rg-style-box rg-style-good"
+              title="Good - Green background"
+              onClick={() => props.onFillColor?.('#dcfce7')}
+              style={{ cursor: 'pointer' }}
+            >
+              Good
+            </div>
+            <div
+              className="rg-style-box rg-style-neutral"
+              title="Neutral - Yellow background"
+              onClick={() => props.onFillColor?.('#fef9c3')}
+              style={{ cursor: 'pointer' }}
+            >
+              Neutral
+            </div>
           </div>
         </div>
       </G>
@@ -559,9 +745,30 @@ function HomeRibbon(props: RibbonProps) {
       {/* ─── Cells ─── */}
       <G label="Cells">
         <div className="rg-cells">
-          <RibbonBtn icon={<AddIcon sx={{ fontSize: 20 }} />} label="Insert" dropDown onClick={props.onInsertRowBelow} />
-          <RibbonBtn icon={<DeleteIcon sx={{ fontSize: 20, color: '#ef4444' }} />} label="Delete" dropDown onClick={props.onDeleteRow} />
-          <RibbonBtn icon={<AspectRatioIcon sx={{ fontSize: 20 }} />} label="Format" dropDown />
+          <RibbonDropdown label="Insert" icon={<AddIcon sx={{ fontSize: 16 }} />}>
+            <MenuItem label="Insert Cells..." onClick={props.onInsertRowBelow} icon={<AddIcon sx={{ fontSize: 14 }} />} />
+            <MenuItem label="Insert Sheet Rows" onClick={props.onInsertRowAbove} />
+            <MenuItem label="Insert Sheet Columns" onClick={props.onInsertColRight} />
+          </RibbonDropdown>
+          <RibbonDropdown label="Delete" icon={<DeleteIcon sx={{ fontSize: 16, color: '#ef4444' }} />}>
+            <MenuItem label="Delete Cells..." onClick={props.onDeleteRow} icon={<DeleteIcon sx={{ fontSize: 14 }} />} />
+            <MenuItem label="Delete Sheet Rows" onClick={props.onDeleteRow} />
+            <MenuItem label="Delete Sheet Columns" onClick={props.onDeleteCol} />
+          </RibbonDropdown>
+          <RibbonDropdown label="Format" icon={<AspectRatioIcon sx={{ fontSize: 16 }} />}>
+            <MenuItem label="Row Height..." onClick={() => {
+              const h = prompt('Row height (px):', '28');
+              if (h) props.onFormatRowHeight?.(Number(h));
+            }} />
+            <MenuItem label="Column Width..." onClick={() => {
+              const w = prompt('Column width (px):', '100');
+              if (w) props.onFormatColWidth?.(Number(w));
+            }} />
+            <MenuSeparator />
+            <MenuItem label="Default Width..." onClick={() => {
+              props.onFormatColWidth?.(100);
+            }} />
+          </RibbonDropdown>
         </div>
       </G>
 
@@ -569,13 +776,39 @@ function HomeRibbon(props: RibbonProps) {
       <G label="Editing">
         <div className="rg-editing">
           <div className="rg-editing-col">
-            <RibbonBtn icon={I.sum} label="AutoSum" onClick={props.onAutoSum} dropDown />
-            <RibbonBtn icon={<ArrowDownwardIcon sx={{ fontSize: 15 }} />} label="Fill" dropDown />
-            <RibbonBtn icon={I.eraser} label="Clear" onClick={props.onClearAll} dropDown />
+            <RibbonDropdown label="AutoSum" icon={I.sum}>
+              <MenuItem label="Sum" onClick={props.onAutoSum} />
+              <MenuItem label="Average" onClick={props.onAutoAverage} />
+              <MenuItem label="Count Numbers" onClick={props.onAutoCount} />
+              <MenuSeparator />
+              <MenuItem label="Max" onClick={props.onAutoMax} />
+              <MenuItem label="Min" onClick={props.onAutoMin} />
+            </RibbonDropdown>
+            <RibbonDropdown label="Fill" icon={<ArrowDownwardIcon sx={{ fontSize: 15 }} />}>
+              <MenuItem label="Down" onClick={props.onFillDown} />
+              <MenuItem label="Right" onClick={props.onFillRight} />
+              <MenuItem label="Up" onClick={props.onFillUp} />
+              <MenuItem label="Left" onClick={props.onFillLeft} />
+            </RibbonDropdown>
+            <RibbonDropdown label="Clear" icon={I.eraser}>
+              <MenuItem label="Clear All" onClick={props.onClearAll} />
+              <MenuItem label="Clear Formats" onClick={props.onClearFormats} />
+              <MenuItem label="Clear Contents" onClick={props.onClearContents} />
+            </RibbonDropdown>
           </div>
           <div className="rg-editing-col">
-            <RibbonBtn icon={I.sort} label="Sort & Filter" dropDown />
-            <RibbonBtn icon={I.find} label="Find & Select" onClick={props.onFind} dropDown />
+            <RibbonDropdown label="Sort & Filter" icon={I.sort}>
+              <MenuItem label="Sort A to Z" onClick={props.onSortAsc} />
+              <MenuItem label="Sort Z to A" onClick={props.onSortDesc} />
+              <MenuSeparator />
+              <MenuItem label="Clear Filter" onClick={props.toggleFilter} />
+            </RibbonDropdown>
+            <RibbonDropdown label="Find & Select" icon={I.find}>
+              <MenuItem label="Find..." onClick={props.onFind} />
+              <MenuItem label="Replace..." onClick={props.onFind} />
+              <MenuSeparator />
+              <MenuItem label="Go To..." onClick={props.onFind} />
+            </RibbonDropdown>
           </div>
         </div>
       </G>
@@ -1208,6 +1441,45 @@ export function Ribbon(props: RibbonProps) {
         .rb-toggle:hover { background: #e5e7eb; border-color: #d1d5db; }
         .rb-toggle:active { background: #d1d5db; }
         .rb-toggle.active { background: #dbeafe; border-color: #93c5fd; color: #2563eb; }
+        .ribbon-dropdown-menu {
+          position: absolute;
+          top: 100%;
+          z-index: 200;
+          background: #fff;
+          border: 1px solid #d1d5db;
+          border-radius: 4px;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.14);
+          min-width: 180px;
+          padding: 4px 0;
+        }
+        .ribbon-menu-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          width: 100%;
+          padding: 5px 12px;
+          border: none;
+          background: transparent;
+          font-size: 11.5px;
+          font-family: var(--font-sans);
+          color: #1f2937;
+          cursor: pointer;
+          text-align: left;
+          white-space: nowrap;
+        }
+        .ribbon-menu-item:hover { background: #e5e7eb; }
+        .ribbon-menu-item:disabled { opacity: 0.4; cursor: default; }
+        .ribbon-menu-item:disabled:hover { background: transparent; }
+        .ribbon-menu-item-icon { display: flex; align-items: center; width: 16px; justify-content: center; }
+        .ribbon-menu-separator { height: 1px; background: #e5e7eb; margin: 3px 0; }
+        .color-palette { padding: 6px 8px; min-width: 200px; }
+        .color-palette-label { font-size: 10px; color: #6b7280; margin: 6px 0 4px; }
+        .color-palette-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; }
+        .color-palette-swatch {
+          width: 16px; height: 16px; border: 1px solid #d1d5db; border-radius: 2px;
+          cursor: pointer; padding: 0; transition: transform 0.1s;
+        }
+        .color-palette-swatch:hover { transform: scale(1.3); z-index: 1; border-color: #000; }
 
         .rb-sep-v {
           width: 1px;

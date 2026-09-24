@@ -23,12 +23,11 @@ export interface SpreadsheetGridProps {
   className?: string;
   showGridlines?: boolean;
   showHeadings?: boolean;
-  /** Per-cell formatting map: key = "A1", value = CellFormat */
   cellFormats?: Record<string, CellFormat>;
-  /** Called when user toggles format on a selection */
   onFormatChange?: (range: CellRange, format: Partial<CellFormat>) => void;
-  /** Called when selection changes; parent reads current cell's format to sync ribbon */
   onSelectionFormat?: (format: CellFormat | null) => void;
+  formatPainterActive?: boolean;
+  onFormatPainterClick?: (ref: string) => void;
 }
 
 function colLetter(idx: number): string {
@@ -43,6 +42,40 @@ function colLetter(idx: number): string {
 
 function cellRef(pos: CellPosition): string {
   return `${colLetter(pos.col)}${pos.row + 1}`;
+}
+
+function formatCellValue(val: CellValue, fmt?: CellFormat): string {
+  if (val === null || val === undefined) return '';
+  if (typeof val === 'string' && val.startsWith('=')) return val;
+  const numFmt = fmt?.numberFormat;
+  if (!numFmt || numFmt === 'General') return String(val);
+  const num = typeof val === 'number' ? val : parseFloat(String(val));
+  if (isNaN(num)) return String(val);
+  switch (numFmt) {
+    case 'Number':
+      return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    case 'Currency':
+      return num.toLocaleString(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
+    case 'Currency ($)':
+      return '$' + num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    case 'Percentage':
+      return (num * 100).toFixed(2) + '%';
+    case 'Scientific':
+      return num.toExponential(2);
+    case 'Date': {
+      const d = new Date((num - 25569) * 86400 * 1000);
+      return isNaN(d.getTime()) ? String(val) : d.toLocaleDateString();
+    }
+    case 'Time': {
+      const d = new Date((num - 25569) * 86400 * 1000);
+      return isNaN(d.getTime()) ? String(val) : d.toLocaleTimeString();
+    }
+    default: {
+      const decimals = parseInt(numFmt.replace(/[^0-9]/g, ''));
+      if (!isNaN(decimals)) return num.toFixed(decimals);
+      return String(val);
+    }
+  }
 }
 
 function mergeFormat(
@@ -68,6 +101,8 @@ export function SpreadsheetGrid({
   cellFormats = {},
   onFormatChange,
   onSelectionFormat,
+  formatPainterActive = false,
+  onFormatPainterClick,
 }: SpreadsheetGridProps) {
   const [grid, setGrid] = useState<GridState>(() => createGridFromData(data));
   const [edCell, setEdCell] = useState<CellPosition | null>(null);
@@ -119,18 +154,21 @@ export function SpreadsheetGrid({
     (pos: CellPosition, e: React.MouseEvent) => {
       if (e.button !== 0) return;
       if (edCell) commitEd();
+      if (formatPainterActive) {
+        onFormatPainterClick?.(cellRef(pos));
+        return;
+      }
       if (e.shiftKey && sel) {
         setSel({ start: sel.start, end: pos });
       } else {
         setSel({ start: pos, end: pos });
-        // Push current cell's format to parent
         const ref = cellRef(pos);
         onSelectionFormat?.(cellFormats[ref] ?? null);
       }
       setDrag(true);
       onCellSelect?.(cellRef(pos));
     },
-    [edCell, commitEd, sel, onCellSelect, cellFormats, onSelectionFormat],
+    [edCell, commitEd, sel, onCellSelect, cellFormats, onSelectionFormat, formatPainterActive, onFormatPainterClick],
   );
 
   const onEnter = useCallback(
@@ -415,9 +453,7 @@ export function SpreadsheetGrid({
                       />
                     ) : (
                       <div className="spreadsheet-cell-content">
-                        {val === null || val === undefined
-                          ? ''
-                          : String(val)}
+                        {formatCellValue(val ?? null, fmt)}
                       </div>
                     )}
                   </div>

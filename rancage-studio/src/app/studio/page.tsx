@@ -670,6 +670,117 @@ function StudioApp() {
     }
   }, [selectedCell, gridData]);
 
+  // ─── AutoSum Variants ──────────────────────────────────
+  const findAdjacentRange = useCallback((): string | null => {
+    if (!selectedCell) return null;
+    const pos = parseRef(selectedCell);
+    if (!pos) return null;
+
+    let startRow = pos.row - 1;
+    while (startRow >= 0) {
+      const v = gridData[startRow]?.[pos.col];
+      if (v === null || v === undefined || v === '') break;
+      startRow--;
+    }
+    startRow++;
+    if (startRow < pos.row) {
+      return `${cellRef(startRow, pos.col)}:${cellRef(pos.row - 1, pos.col)}`;
+    }
+
+    let startCol = pos.col - 1;
+    while (startCol >= 0) {
+      const v = gridData[pos.row]?.[startCol];
+      if (v === null || v === undefined || v === '') break;
+      startCol--;
+    }
+    startCol++;
+    if (startCol < pos.col) {
+      return `${cellRef(pos.row, startCol)}:${cellRef(pos.row, pos.col - 1)}`;
+    }
+    return null;
+  }, [selectedCell, gridData]);
+
+  const insertFormula = useCallback((fn: string) => {
+    if (!selectedCell) return;
+    const pos = parseRef(selectedCell);
+    if (!pos) return;
+    const range = findAdjacentRange();
+    if (!range) return;
+    const newData = gridData.map((r) => [...r]);
+    newData[pos.row]![pos.col] = `=${fn}(${range})`;
+    setGridData(newData);
+  }, [selectedCell, gridData, findAdjacentRange]);
+
+  const handleAutoAverage = useCallback(() => insertFormula('AVERAGE'), [insertFormula]);
+  const handleAutoCount = useCallback(() => insertFormula('COUNT'), [insertFormula]);
+  const handleAutoMax = useCallback(() => insertFormula('MAX'), [insertFormula]);
+  const handleAutoMin = useCallback(() => insertFormula('MIN'), [insertFormula]);
+
+  // ─── Fill ──────────────────────────────────────────────
+  const handleFillDown = useCallback(() => {
+    if (!selectedRange) return;
+    const nr = normalizeRange(selectedRange);
+    const newData = gridData.map((r) => [...r]);
+    for (let c = nr.start.col; c <= nr.end.col; c++) {
+      const srcVal = newData[nr.start.row]?.[c];
+      for (let r = nr.start.row + 1; r <= nr.end.row; r++) {
+        if (newData[r]) newData[r]![c] = srcVal ?? null;
+      }
+    }
+    setGridData(newData);
+  }, [selectedRange, gridData]);
+
+  const handleFillRight = useCallback(() => {
+    if (!selectedRange) return;
+    const nr = normalizeRange(selectedRange);
+    const newData = gridData.map((r) => [...r]);
+    for (let r = nr.start.row; r <= nr.end.row; r++) {
+      const srcVal = newData[r]?.[nr.start.col];
+      for (let c = nr.start.col + 1; c <= nr.end.col; c++) {
+        if (newData[r]) newData[r]![c] = srcVal ?? null;
+      }
+    }
+    setGridData(newData);
+  }, [selectedRange, gridData]);
+
+  const handleFillUp = useCallback(() => {
+    if (!selectedRange) return;
+    const nr = normalizeRange(selectedRange);
+    const newData = gridData.map((r) => [...r]);
+    for (let c = nr.start.col; c <= nr.end.col; c++) {
+      const srcVal = newData[nr.end.row]?.[c];
+      for (let r = nr.start.row; r < nr.end.row; r++) {
+        if (newData[r]) newData[r]![c] = srcVal ?? null;
+      }
+    }
+    setGridData(newData);
+  }, [selectedRange, gridData]);
+
+  const handleFillLeft = useCallback(() => {
+    if (!selectedRange) return;
+    const nr = normalizeRange(selectedRange);
+    const newData = gridData.map((r) => [...r]);
+    for (let r = nr.start.row; r <= nr.end.row; r++) {
+      const srcVal = newData[r]?.[nr.end.col];
+      for (let c = nr.start.col; c < nr.end.col; c++) {
+        if (newData[r]) newData[r]![c] = srcVal ?? null;
+      }
+    }
+    setGridData(newData);
+  }, [selectedRange, gridData]);
+
+  // ─── Format Painter ────────────────────────────────────
+  const handleApplyFormatPainter = useCallback((targetRef: string) => {
+    if (!formatPainterActive || !selectedCell) return;
+    const sourceFmt = cellFormats[selectedCell];
+    if (!sourceFmt) return;
+    const pos = parseRef(targetRef);
+    if (!pos) return;
+    const nr: CellRange = { start: pos, end: pos };
+    handleFormatChange(nr, sourceFmt);
+    setFormatPainterActive(false);
+  }, [formatPainterActive, selectedCell, cellFormats, handleFormatChange]);
+
   // ─── Clear ──────────────────────────────────────────────
   const handleClearAll = useCallback(() => {
     if (!selectedRange) return;
@@ -972,9 +1083,33 @@ function StudioApp() {
           onDeleteCol={handleDeleteCol}
           onMergeCells={handleMergeCells}
           onAutoSum={handleAutoSum}
+          onAutoAverage={handleAutoAverage}
+          onAutoCount={handleAutoCount}
+          onAutoMax={handleAutoMax}
+          onAutoMin={handleAutoMin}
+          onFillDown={handleFillDown}
+          onFillRight={handleFillRight}
+          onFillUp={handleFillUp}
+          onFillLeft={handleFillLeft}
           onClearAll={handleClearAll}
           onClearContents={handleClearContents}
           onClearFormats={handleClearFormats}
+          onFormatRowHeight={(h) => {
+            if (!selectedRange) return;
+            const nr = normalizeRange(selectedRange);
+            for (let r = nr.start.row; r <= nr.end.row; r++) {
+              const rowEl = document.querySelector(`[data-row="${r}"]`) as HTMLElement;
+              if (rowEl) rowEl.style.height = `${h}px`;
+            }
+          }}
+          onFormatColWidth={(w) => {
+            if (!selectedRange) return;
+            const nr = normalizeRange(selectedRange);
+            for (let c = nr.start.col; c <= nr.end.col; c++) {
+              const colEl = document.querySelector(`[data-col="${c}"]`) as HTMLElement;
+              if (colEl) colEl.style.width = `${w}px`;
+            }
+          }}
           onFind={handleFind}
         />
 
@@ -1012,6 +1147,10 @@ function StudioApp() {
                   data={gridData}
                   onDataChange={handleGridChange}
                   onCellSelect={(ref) => {
+                    if (formatPainterActive) {
+                      handleApplyFormatPainter(ref);
+                      return;
+                    }
                     setSelectedCell(ref);
                     const p = parseRef(ref);
                     if (p) {
@@ -1026,6 +1165,7 @@ function StudioApp() {
                   cellFormats={cellFormats}
                   onFormatChange={handleFormatChange}
                   onSelectionFormat={handleSelectionFormat}
+                  formatPainterActive={formatPainterActive}
                 />
               )}
             </ErrorBoundary>
