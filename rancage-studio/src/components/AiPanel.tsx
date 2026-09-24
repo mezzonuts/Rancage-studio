@@ -8,6 +8,8 @@ import React, {
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
 import type { AIPanelTab } from '@/app/studio/page';
+import type { FormulaGenerationResult } from '@/lib/ai/generation';
+import type { ValidationResult } from '@/lib/ai/validator';
 
 interface ChatMessage {
   id: string;
@@ -17,6 +19,8 @@ interface ChatMessage {
   actions?: { icon: string; text: string }[];
   code?: string;
   lang?: string;
+  formula?: string;
+  validation?: ValidationResult;
 }
 
 const INITIAL_MESSAGES: ChatMessage[] = [
@@ -71,6 +75,7 @@ export interface AiPanelProps {
   aiProcessing: boolean;
   activeTab: AIPanelTab;
   onTabChange: (tab: AIPanelTab) => void;
+  onFormulaGenerated?: (result: FormulaGenerationResult) => void;
 }
 
 function ActionIcon({ type }: { type: string }) {
@@ -312,6 +317,7 @@ export function AiPanel({
   aiProcessing,
   activeTab,
   onTabChange,
+  onFormulaGenerated,
 }: AiPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState('');
@@ -343,15 +349,16 @@ export function AiPanel({
     setInput('');
     onSend?.(text);
 
-    setTimeout(() => {
-      const aiMsg: ChatMessage = {
-        id: (Date.now() + 1).toString(),
+    const aiMsgId = (Date.now() + 1).toString();
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: aiMsgId,
         role: 'ai',
         sender: 'Rancagé Analyst',
         text: `Processing your request: "${text}". I'll analyze the data and generate the appropriate formulas and visualizations.`,
-      };
-      setMessages((prev) => [...prev, aiMsg]);
-    }, 1200);
+      },
+    ]);
   }, [input, onSend]);
 
   const handleKeyDown = useCallback(

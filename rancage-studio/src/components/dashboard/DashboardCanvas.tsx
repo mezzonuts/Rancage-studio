@@ -12,9 +12,11 @@ interface DashboardCanvasProps {
   dashboard: DashboardState;
   onDashboardChange?: (d: DashboardState) => void;
   queryFn?: (sql: string) => Promise<{ columns: string[]; rows: unknown[][] }>;
+  onExportExcel?: () => void;
+  onExportHTML?: () => void;
 }
 
-export function DashboardCanvas({ dashboard, onDashboardChange, queryFn }: DashboardCanvasProps) {
+export function DashboardCanvas({ dashboard, onDashboardChange, queryFn, onExportExcel, onExportHTML }: DashboardCanvasProps) {
   const [dash, setDash] = useState(dashboard);
   const [editingWidget, setEditingWidget] = useState<string | null>(null);
 
@@ -61,7 +63,7 @@ export function DashboardCanvas({ dashboard, onDashboardChange, queryFn }: Dashb
 
   return (
     <div className="flex flex-col gap-4" role="region" aria-label="Dashboard">
-      <Toolbar onAdd={addWidget} name={dash.name} />
+      <Toolbar onAdd={addWidget} name={dash.name} onExportExcel={onExportExcel} onExportHTML={onExportHTML} />
       {dash.slicers.length > 0 && (
         <SlicerPanel
           slicers={dash.slicers}
@@ -127,7 +129,17 @@ export function DashboardCanvas({ dashboard, onDashboardChange, queryFn }: Dashb
   );
 }
 
-function Toolbar({ onAdd, name }: { onAdd: (t: WidgetType) => void; name: string }) {
+function Toolbar({ 
+  onAdd, 
+  name, 
+  onExportExcel, 
+  onExportHTML 
+}: { 
+  onAdd: (t: WidgetType) => void; 
+  name: string;
+  onExportExcel?: () => void;
+  onExportHTML?: () => void;
+}) {
   const types: WidgetType[] = ['bar', 'line', 'area', 'pie', 'scatter', 'radar', 'kpi'];
   return (
     <div className="flex items-center gap-2 border-b pb-2">
@@ -143,6 +155,24 @@ function Toolbar({ onAdd, name }: { onAdd: (t: WidgetType) => void; name: string
             + {t.toUpperCase()}
           </button>
         ))}
+        {onExportExcel && (
+          <button
+            onClick={onExportExcel}
+            className="hover:bg-muted rounded border px-2 py-1 text-xs"
+            aria-label="Export to Excel"
+          >
+            📊 Export XLSX
+          </button>
+        )}
+        {onExportHTML && (
+          <button
+            onClick={onExportHTML}
+            className="hover:bg-muted rounded border px-2 py-1 text-xs"
+            aria-label="Export to HTML"
+          >
+            🌐 Export HTML
+          </button>
+        )}
       </div>
     </div>
   );

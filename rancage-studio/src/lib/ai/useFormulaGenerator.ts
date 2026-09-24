@@ -4,7 +4,8 @@ import { adapterConfigFromBYOK } from './types';
 import { useBYOK } from '@/lib/byok/context';
 import type { TableContext } from './context';
 import { createTableContext } from './context';
-import type { FormulaGenerationResult, ValidationResult } from './generation';
+import type { FormulaGenerationResult } from './generation';
+import type { ValidationResult } from './validator';
 
 export interface UseFormulaGeneratorReturn {
   generateFormula: (prompt: string, table: TableContext) => Promise<FormulaGenerationResult>;

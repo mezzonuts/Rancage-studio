@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useBYOK } from '@/lib/byok/context';
 import { BYOKProvider } from '@/lib/byok';
+import { useFormulaGenerator, buildTableContextFromGrid, resolveColumnRefs } from '@/lib/ai/useFormulaGenerator';
 import { BYOKManager } from '@/components/BYOKManager';
 import { SpreadsheetGrid } from '@/components/SpreadsheetGrid';
 import { DashboardCanvas } from '@/components/dashboard/DashboardCanvas';
@@ -21,6 +23,7 @@ import {
   removeRow as gridRemoveRow,
   addColumn as gridAddCol,
   removeColumn as gridRemoveCol,
+  setCell as gridSetCell,
 } from '@/lib/grid/store';
 import type { CellValue } from '@/lib/grid/types';
 import type { CellFormat, CellRange, GridState } from '@/lib/grid/types';
@@ -84,6 +87,14 @@ export type ViewMode = 'spreadsheets' | 'dashboards';
 export type AIPanelTab = 'Chat' | 'Replays' | 'Templates' | 'Scripts' | 'Settings';
 
 export default function StudioPage() {
+  return (
+    <BYOKProvider>
+      <StudioApp />
+    </BYOKProvider>
+  );
+}
+
+function StudioApp() {
   const [activeRibbonTab, setActiveRibbonTab] = useState('Home');
   const [showUpload, setShowUpload] = useState(false);
   const [showBYOK, setShowBYOK] = useState(false);
@@ -319,9 +330,10 @@ export default function StudioPage() {
     downloadBlob(blob, 'RancageExport.xlsx');
   }, [gridData]);
 
-  const handleHTMLExport = useCallback(() => {
+  const handleHTMLExport = useCallback(async () => {
     const htmlConfig = dashboardToHTMLConfig(dashboard, new Map());
-    const blob = new Blob([buildStandaloneHTML(htmlConfig)], { type: 'text/html' });
+    const html = await buildStandaloneHTML(htmlConfig);
+    const blob = new Blob([html], { type: 'text/html' });
     downloadBlob(blob, 'RancageDashboard.html');
   }, [dashboard]);
 
@@ -568,10 +580,53 @@ export default function StudioPage() {
   }, []);
 
   // ─── AI ──────────────────────────────────────────────────
-  const handleAiSend = useCallback(() => {
-    setAiProcessing(true);
-    setTimeout(() => setAiProcessing(false), 2000);
+  const { generateFormula, isGenerating, error: aiError } = useFormulaGenerator();
+
+  const [aiToast, setAiToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const aiToastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    if (aiToastTimeoutRef.current) clearTimeout(aiToastTimeoutRef.current);
+    setAiToast({ message, type });
+    aiToastTimeoutRef.current = setTimeout(() => setAiToast(null), 3000);
   }, []);
+
+  const handleAiSend = useCallback(async (message: string) => {
+    setAiProcessing(true);
+    try {
+      const tableCtx = buildTableContextFromGrid(gridData, activeSheet);
+      const result = await generateFormula(message, tableCtx);
+      if (result.validation.valid) {
+        const headers = extractColumnNamesLocal(gridData);
+        const resolvedFormula = resolveColumnRefs(result.formula, headers);
+        handleFormulaInsert(resolvedFormula);
+        showToast(`Formula inserted: ${resolvedFormula}`, 'success');
+      } else {
+        showToast(`Formula validation issue: ${result.validation.errors.join(', ')}`, 'error');
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to generate formula';
+      showToast(msg, 'error');
+    } finally {
+      setAiProcessing(false);
+    }
+  }, [gridData, activeSheet, generateFormula, showToast]);
+
+  const extractColumnNamesLocal = (data: unknown[][]): string[] => {
+    if (data.length === 0) return [];
+    return (data[0] as CellValue[]).map((h, i) =>
+      h !== null && h !== undefined ? String(h) : `Column${i + 1}`,
+    );
+  };
+
+  const handleFormulaInsert = useCallback((formula: string) => {
+    if (!selectedCell) return;
+    const pos = parseRef(selectedCell);
+    if (!pos) return;
+    const gs = getGridState();
+    const ng = gridSetCell(gs, pos, formula);
+    setGridData(ng.data);
+  }, [selectedCell, gridData]);
 
   const toggleChat = useCallback(() => {
     setChatOpen((prev) => !prev);
@@ -608,8 +663,8 @@ export default function StudioPage() {
   const colCount = Math.max(...gridData.map((r) => r.length), 0);
 
   return (
-    <BYOKProvider>
-      <div className="app">
+    <>
+    <div className="app">
         {/* RIBBON */}
         <Ribbon
           activeTab={activeRibbonTab}
@@ -719,7 +774,12 @@ export default function StudioPage() {
             >
               {viewMode === 'dashboards' ? (
                 <div style={{ padding: 16, height: '100%' }}>
-                  <DashboardCanvas dashboard={dashboard} onDashboardChange={handleDashboardChange} />
+                  <DashboardCanvas
+                    dashboard={dashboard}
+                    onDashboardChange={handleDashboardChange}
+                    onExportExcel={handleExcelExport}
+                    onExportHTML={handleHTMLExport}
+                  />
                 </div>
               ) : (
                 <SpreadsheetGrid
@@ -782,7 +842,7 @@ export default function StudioPage() {
             aiConnected={false}
             chatOpen={chatOpen}
             onClose={toggleChat}
-            aiProcessing={aiProcessing}
+            aiProcessing={aiProcessing || isGenerating}
             activeTab={aiPanelTab}
             onTabChange={setAiPanelTab}
           />
@@ -945,6 +1005,6 @@ export default function StudioPage() {
           body { overflow: visible !important; height: auto !important; }
         }
       `}</style>
-    </BYOKProvider>
+    </>
   );
 }
