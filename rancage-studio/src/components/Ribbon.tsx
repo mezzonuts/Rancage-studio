@@ -327,7 +327,7 @@ function HomeRibbon(props: RibbonProps) {
     <>
       <G label="Clipboard">
         <R icon={I.clipboard} label="Paste" onClick={props.onPaste} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <R icon={I.copy} label="Copy" small onClick={props.onCopy} />
           <R icon={I.cut} label="Cut" small onClick={props.onCut} />
         </div>
@@ -360,7 +360,7 @@ function HomeRibbon(props: RibbonProps) {
               ))}
             </select>
           </div>
-          <div style={{ display: 'flex', gap: 2 }}>
+          <div style={{ display: 'flex', gap: 4 }}>
             <R icon={I.bold} label="" active={props.bold} onClick={props.onToggleBold} small />
             <R
               icon={I.italic}
@@ -388,7 +388,7 @@ function HomeRibbon(props: RibbonProps) {
       </G>
       <G label="Alignment">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div style={{ display: 'flex', gap: 2 }}>
+          <div style={{ display: 'flex', gap: 4 }}>
             <R
               icon={I.alignLeft}
               label=""
@@ -411,7 +411,7 @@ function HomeRibbon(props: RibbonProps) {
               small
             />
           </div>
-          <div style={{ display: 'flex', gap: 2 }}>
+          <div style={{ display: 'flex', gap: 4 }}>
             <R icon={I.merge} label="Merge" small />
             <R icon={I.wrap} label="Wrap" small />
           </div>
@@ -434,7 +434,7 @@ function HomeRibbon(props: RibbonProps) {
             <option>Scientific</option>
             <option>Text</option>
           </select>
-          <div style={{ display: 'flex', gap: 2 }}>
+          <div style={{ display: 'flex', gap: 4 }}>
             <Button
               className="ribbon-btn ribbon-btn-sm"
               title="Increase Decimal"
@@ -475,7 +475,7 @@ function HomeRibbon(props: RibbonProps) {
         <R icon={I.style} label="Cell Styles" small />
       </G>
       <G label="Cells">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <div style={{ display: 'flex', gap: 4 }}>
             <R icon={I.insert} label="Row ▲" small onClick={props.onInsertRowAbove} />
             <R icon={I.insert} label="Row ▼" small onClick={props.onInsertRowBelow} />
@@ -571,7 +571,7 @@ function PageLayoutRibbon() {
         <R icon={I.bg} label="Background" small />
       </G>
       <G label="Scale to Fit">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <div style={{ fontSize: 10, color: 'var(--text-tertiary)', textAlign: 'center' }}>
             Width: Auto
           </div>
@@ -599,12 +599,12 @@ function FormulasRibbon() {
     <>
       <G label="Function Library">
         <R icon={I.function} label="Insert Function" />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <R icon={I.sum} label="AutoSum" small />
           <R icon={I.function} label="Financial" small />
           <R icon={I.function} label="Logical" small />
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <R icon={I.function} label="Text" small />
           <R icon={I.function} label="Date/Time" small />
           <R icon={I.function} label="Lookup" small />
@@ -637,7 +637,7 @@ function DataRibbon(props: RibbonProps) {
         <R icon={I.open} label="From Web" small />
       </G>
       <G label="Sort & Filter">
-        <div style={{ display: 'flex', gap: 2 }}>
+        <div style={{ display: 'flex', gap: 4 }}>
           <R icon={I.sortAsc} label="A→Z" onClick={props.onSortAsc} small />
           <R icon={I.sortDesc} label="Z→A" onClick={props.onSortDesc} small />
         </div>
@@ -1023,22 +1023,21 @@ export function Ribbon(props: RibbonProps) {
         .ribbon-toolbar {
           display: flex;
           align-items: stretch;
-          padding: 8px 12px;
+          padding: 4px 12px 2px;
           background: var(--bg-ribbon);
-          min-height: 72px;
-          gap: 8px;
-          overflow-x: auto;
+          min-height: 76px;
+          gap: 0;
+          overflow-x: hidden;
         }
         .ribbon-group {
           display: flex;
           flex-direction: column;
-          align-items: center;
-          padding: 0 8px;
-          padding-bottom: 18px;
+          align-items: stretch;
+          padding: 4px 10px 16px;
           border-right: 1px solid var(--border-ribbon);
           position: relative;
-          flex-shrink: 0;
-          min-width: fit-content;
+          flex-shrink: 1;
+          min-width: 0;
         }
         .ribbon-group:last-child { border-right: none; }
         .ribbon-group-label {
@@ -1050,14 +1049,19 @@ export function Ribbon(props: RibbonProps) {
           font-size: 10px;
           font-weight: 500;
           color: var(--text-tertiary);
-          padding: 2px 0;
+          padding: 3px 0 1px;
           border-top: 1px solid var(--border-light);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .ribbon-group-content {
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 4px;
-          padding: 4px 0;
+          flex: 1;
+          min-height: 0;
         }
         .ribbon-btn {
           display: flex !important;
@@ -1072,8 +1076,9 @@ export function Ribbon(props: RibbonProps) {
           background: transparent !important;
           border: none !important;
           font-family: var(--font-sans) !important;
-          min-width: 44px !important;
+          min-width: 40px !important;
           box-shadow: none !important;
+          flex-shrink: 1;
         }
         .ribbon-btn:hover { background: var(--bg-grid-hover) !important; }
         .ribbon-btn:active { background: var(--accent-bg) !important; }
@@ -1088,7 +1093,7 @@ export function Ribbon(props: RibbonProps) {
           min-width: 52px !important;
         }
         .ribbon-btn-paste svg { width: 28px; height: 28px; color: var(--accent); }
-        .ribbon-btn-sm { min-width: 32px !important; padding: 4px !important; }
+        .ribbon-btn-sm { min-width: 28px !important; padding: 3px 4px !important; }
         .ribbon-btn-sm svg { width: 16px; height: 16px; }
         .ribbon-select {
           padding: 3px 6px;
