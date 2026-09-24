@@ -75,6 +75,17 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import DataObjectIcon from '@mui/icons-material/DataObject';
 import TextFieldsIcon from '@mui/icons-material/TextFields';
+import VerticalAlignTopIcon from '@mui/icons-material/VerticalAlignTop';
+import VerticalAlignCenterIcon from '@mui/icons-material/VerticalAlignCenter';
+import VerticalAlignBottomIcon from '@mui/icons-material/VerticalAlignBottom';
+import BorderAllIcon from '@mui/icons-material/BorderAll';
+import FormatSizeIcon from '@mui/icons-material/FormatSize';
+import FormatIndentDecreaseIcon from '@mui/icons-material/FormatIndentDecrease';
+import FormatIndentIncreaseIcon from '@mui/icons-material/FormatIndentIncrease';
+import ContentPasteGoIcon from '@mui/icons-material/ContentPasteGo';
+import SouthEastIcon from '@mui/icons-material/SouthEast';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import PercentIcon from '@mui/icons-material/Percent';
 
 export interface RibbonProps {
   activeTab: string;
@@ -222,6 +233,19 @@ const I = {
     </svg>
   ),
   check: <CheckIcon className="h-4 w-4" />,
+  alignTop: <VerticalAlignTopIcon className="h-4 w-4" />,
+  alignMiddle: <VerticalAlignCenterIcon className="h-4 w-4" />,
+  alignBottom: <VerticalAlignBottomIcon className="h-4 w-4" />,
+  borderGrid: <BorderAllIcon className="h-4 w-4" />,
+  formatSize: <FormatSizeIcon className="h-4 w-4" />,
+  indentDecrease: <FormatIndentDecreaseIcon className="h-4 w-4" />,
+  indentIncrease: <FormatIndentIncreaseIcon className="h-4 w-4" />,
+  formatPainter: <ContentPasteGoIcon className="h-4 w-4" />,
+  formatClear: <FormatClearIcon className="h-4 w-4" />,
+  arrowSE: <SouthEastIcon sx={{ fontSize: 10 }} />,
+  arrowDown: <KeyboardArrowDownIcon sx={{ fontSize: 12 }} />,
+  percent: <PercentIcon className="h-4 w-4" />,
+  currency: <AttachMoneyIcon className="h-4 w-4" />,
 };
 
 function R({
@@ -281,7 +305,12 @@ function G({ children, label }: { children: React.ReactNode; label: string }) {
   return (
     <div className="ribbon-group">
       <div className="ribbon-group-content">{children}</div>
-      <div className="ribbon-group-label">{label}</div>
+      <div className="ribbon-group-footer">
+        <span className="ribbon-group-label">{label}</span>
+        <span className="ribbon-dialog-launcher" title={`Open ${label} dialog`}>
+          {I.arrowSE}
+        </span>
+      </div>
     </div>
   );
 }
@@ -325,22 +354,83 @@ function FileRibbon({
   );
 }
 
+function RibbonBtn({
+  icon,
+  label,
+  onClick,
+  active,
+  size = 'md',
+  accent,
+  dropDown,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick?: () => void;
+  active?: boolean;
+  size?: 'lg' | 'md' | 'sm';
+  accent?: boolean;
+  dropDown?: boolean;
+}) {
+  const isLarge = size === 'lg';
+  const isSmall = size === 'sm';
+  return (
+    <button
+      className={`rb ${isLarge ? 'rb-lg' : ''} ${isSmall ? 'rb-sm' : ''} ${active ? 'active' : ''} ${accent ? 'accent' : ''}`}
+      onClick={onClick}
+      type="button"
+    >
+      <span className="rb-icon">{icon}</span>
+      <span className="rb-text">{label}</span>
+      {dropDown && <KeyboardArrowDownIcon sx={{ fontSize: 10, ml: -0.3 }} />}
+    </button>
+  );
+}
+
+function RibbonToggle({
+  icon,
+  onClick,
+  active,
+  title,
+}: {
+  icon: React.ReactNode;
+  onClick?: () => void;
+  active?: boolean;
+  title?: string;
+}) {
+  return (
+    <button
+      className={`rb-toggle ${active ? 'active' : ''}`}
+      onClick={onClick}
+      type="button"
+      title={title}
+    >
+      {icon}
+    </button>
+  );
+}
+
 function HomeRibbon(props: RibbonProps) {
   return (
     <>
+      {/* ─── Clipboard ─── */}
       <G label="Clipboard">
-        <R icon={I.clipboard} label="Paste" onClick={props.onPaste} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <R icon={I.copy} label="Copy" small onClick={props.onCopy} />
-          <R icon={I.cut} label="Cut" small onClick={props.onCut} />
+        <div className="rg-clipboard">
+          <RibbonBtn icon={<ContentPasteIcon sx={{ fontSize: 22 }} />} label="Paste" onClick={props.onPaste} size="lg" />
+          <div className="rg-clipboard-side">
+            <RibbonBtn icon={I.cut} label="Cut" onClick={props.onCut} size="sm" />
+            <RibbonBtn icon={I.copy} label="Copy" onClick={props.onCopy} size="sm" />
+            <RibbonBtn icon={I.formatPainter} label="Format Painter" size="sm" />
+          </div>
         </div>
       </G>
+
+      {/* ─── Font ─── */}
       <G label="Font">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'stretch' }}>
-          <div style={{ display: 'flex', gap: 4 }}>
+        <div className="rg-font">
+          <div className="rg-font-row">
             <select
               className="ribbon-select"
-              style={{ flex: 1, minWidth: 90 }}
+              style={{ flex: 1, minWidth: 0 }}
               value={props.fontFamily}
               onChange={(e) => props.onFontFamilyChange(e.target.value)}
             >
@@ -351,80 +441,66 @@ function HomeRibbon(props: RibbonProps) {
               <option value="Calibri">Calibri</option>
             </select>
             <select
-              className="ribbon-select"
-              style={{ width: 52 }}
+              className="ribbon-select ribbon-select-sm"
               value={props.fontSize}
               onChange={(e) => props.onFontSizeChange(Number(e.target.value))}
             >
               {[8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 36, 48, 72].map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
+                <option key={s} value={s}>{s}</option>
               ))}
             </select>
+            <RibbonToggle icon={<FormatSizeIcon sx={{ fontSize: 15 }} />} title="Increase Font Size" />
+            <RibbonToggle icon={<span style={{ fontSize: 12, fontWeight: 700 }}>A</span>} title="Decrease Font Size" />
           </div>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <R icon={I.bold} label="" active={props.bold} onClick={props.onToggleBold} small />
-            <R
-              icon={I.italic}
-              label=""
-              active={props.italic}
-              onClick={props.onToggleItalic}
-              small
-            />
-            <R
-              icon={I.underline}
-              label=""
-              active={props.underline}
-              onClick={props.onToggleUnderline}
-              small
-            />
-            <R
-              icon={I.strikethrough}
-              label=""
-              active={props.strikethrough}
-              onClick={props.onToggleStrikethrough}
-              small
-            />
+          <div className="rg-font-row">
+            <RibbonToggle icon={I.bold} active={props.bold} onClick={props.onToggleBold} title="Bold" />
+            <RibbonToggle icon={I.italic} active={props.italic} onClick={props.onToggleItalic} title="Italic" />
+            <RibbonToggle icon={I.underline} active={props.underline} onClick={props.onToggleUnderline} title="Underline" />
+            <div className="rb-sep-v" />
+            <RibbonToggle icon={I.borderGrid} title="Borders" />
+            <div className="rb-color-btn" title="Fill Color">
+              <FormatColorFillIcon sx={{ fontSize: 14 }} />
+              <span className="rb-color-stripe" style={{ background: '#facc15' }} />
+            </div>
+            <div className="rb-color-btn" title="Font Color">
+              <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1 }}>A</span>
+              <span className="rb-color-stripe" style={{ background: '#ef4444' }} />
+            </div>
           </div>
         </div>
       </G>
+
+      {/* ─── Alignment ─── */}
       <G label="Alignment">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <R
-              icon={I.alignLeft}
-              label=""
-              active={props.textAlign === 'left'}
-              onClick={() => props.onTextAlignChange('left')}
-              small
-            />
-            <R
-              icon={I.alignCenter}
-              label=""
-              active={props.textAlign === 'center'}
-              onClick={() => props.onTextAlignChange('center')}
-              small
-            />
-            <R
-              icon={I.alignRight}
-              label=""
-              active={props.textAlign === 'right'}
-              onClick={() => props.onTextAlignChange('right')}
-              small
-            />
+        <div className="rg-align">
+          <div className="rg-align-row">
+            <RibbonToggle icon={<VerticalAlignTopIcon sx={{ fontSize: 15 }} />} title="Top Align" />
+            <RibbonToggle icon={<VerticalAlignCenterIcon sx={{ fontSize: 15 }} />} title="Middle Align" />
+            <RibbonToggle icon={<VerticalAlignBottomIcon sx={{ fontSize: 15 }} />} title="Bottom Align" />
+            <div className="rb-sep-v" />
+            <RibbonBtn icon={<span style={{ fontSize: 11, fontWeight: 600, fontStyle: 'italic' }}>ab</span>} label="Orientation" size="sm" dropDown />
+            <div className="rb-sep-v" />
+            <RibbonBtn icon={I.wrap} label="Wrap Text" size="sm" />
           </div>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <R icon={I.merge} label="Merge" small />
-            <R icon={I.wrap} label="Wrap" small />
+          <div className="rg-align-row">
+            <RibbonToggle icon={I.alignLeft} active={props.textAlign === 'left'} onClick={() => props.onTextAlignChange('left')} title="Align Left" />
+            <RibbonToggle icon={I.alignCenter} active={props.textAlign === 'center'} onClick={() => props.onTextAlignChange('center')} title="Center" />
+            <RibbonToggle icon={I.alignRight} active={props.textAlign === 'right'} onClick={() => props.onTextAlignChange('right')} title="Align Right" />
+            <div className="rb-sep-v" />
+            <RibbonToggle icon={I.indentDecrease} title="Decrease Indent" />
+            <RibbonToggle icon={I.indentIncrease} title="Increase Indent" />
+            <div className="rb-sep-v" />
+            <RibbonBtn icon={I.merge} label="Merge & Center" dropDown />
           </div>
         </div>
       </G>
+
+      {/* ─── Number ─── */}
       <G label="Number">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'stretch' }}>
+        <div className="rg-number">
           <select
             className="ribbon-select"
-            style={{ minWidth: 100 }}
+            style={{ width: '100%' }}
             value={props.numberFormat}
             onChange={(e) => props.onNumberFormatChange(e.target.value)}
           >
@@ -437,72 +513,54 @@ function HomeRibbon(props: RibbonProps) {
             <option>Scientific</option>
             <option>Text</option>
           </select>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <Button
-              className="ribbon-btn ribbon-btn-sm"
-              title="Increase Decimal"
-              disableRipple
-              disableElevation
-              sx={{
-                textTransform: 'none',
-                minWidth: 32,
-                padding: '4px',
-                borderRadius: '6px',
-                flexDirection: 'column',
-                '&:hover': { background: 'var(--bg-grid-hover)' },
-              }}
-            >
-              <span className="mono-sm">.0→.00</span>
-            </Button>
-            <Button
-              className="ribbon-btn ribbon-btn-sm"
-              title="Decrease Decimal"
-              disableRipple
-              disableElevation
-              sx={{
-                textTransform: 'none',
-                minWidth: 32,
-                padding: '4px',
-                borderRadius: '6px',
-                flexDirection: 'column',
-                '&:hover': { background: 'var(--bg-grid-hover)' },
-              }}
-            >
-              <span className="mono-sm">.00→.0</span>
-            </Button>
+          <div className="rg-number-row">
+            <RibbonBtn icon={I.currency} label="$" size="sm" dropDown />
+            <RibbonBtn icon={I.percent} label="%" size="sm" />
+            <div className="rb-sep-v" />
+            <RibbonBtn icon={<span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', fontWeight: 600 }}>,</span>} label="" size="sm" />
+            <div className="rb-sep-v" />
+            <RibbonToggle icon={<span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', fontWeight: 600 }}>.00→</span>} title="Increase Decimal" />
+            <RibbonToggle icon={<span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', fontWeight: 600 }}>←.00</span>} title="Decrease Decimal" />
           </div>
         </div>
       </G>
+
+      {/* ─── Styles ─── */}
       <G label="Styles">
-        <R icon={I.format} label="Conditional" small />
-        <R icon={I.style} label="Cell Styles" small />
-      </G>
-      <G label="Cells">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <R icon={I.insert} label="Row ▲" small onClick={props.onInsertRowAbove} />
-            <R icon={I.insert} label="Row ▼" small onClick={props.onInsertRowBelow} />
-          </div>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <R icon={I.insert} label="Col ◀" small onClick={props.onInsertColLeft} />
-            <R icon={I.insert} label="Col ▶" small onClick={props.onInsertColRight} />
-          </div>
-          <div style={{ display: 'flex', gap: 4 }}>
-            <R icon={I.delete} label="Del Row" small onClick={props.onDeleteRow} />
-            <R icon={I.delete} label="Del Col" small onClick={props.onDeleteCol} />
+        <div className="rg-styles">
+          <RibbonBtn icon={<ViewQuiltIcon sx={{ fontSize: 18 }} />} label="Conditional" dropDown />
+          <RibbonBtn icon={<PaletteIcon sx={{ fontSize: 18 }} />} label="Format as Table" dropDown />
+          <div className="rg-cell-styles">
+            <div className="rg-style-box rg-style-normal">Normal</div>
+            <div className="rg-style-box rg-style-bad">Bad</div>
+            <div className="rg-style-box rg-style-good">Good</div>
+            <div className="rg-style-box rg-style-neutral">Neutral</div>
           </div>
         </div>
       </G>
+
+      {/* ─── Cells ─── */}
+      <G label="Cells">
+        <div className="rg-cells">
+          <RibbonBtn icon={<AddIcon sx={{ fontSize: 20 }} />} label="Insert" dropDown />
+          <RibbonBtn icon={<DeleteIcon sx={{ fontSize: 20, color: '#ef4444' }} />} label="Delete" dropDown />
+          <RibbonBtn icon={<AspectRatioIcon sx={{ fontSize: 20 }} />} label="Format" dropDown />
+        </div>
+      </G>
+
+      {/* ─── Editing ─── */}
       <G label="Editing">
-        <R icon={I.sort} label="Sort" onClick={props.onSortAsc} small />
-        <R
-          icon={I.filter}
-          label="Filter"
-          onClick={props.toggleFilter}
-          small
-          active={props.filterActive}
-        />
-        <R icon={I.find} label="Find" small onClick={props.onFind} />
+        <div className="rg-editing">
+          <div className="rg-editing-col">
+            <RibbonBtn icon={I.sum} label="AutoSum" dropDown />
+            <RibbonBtn icon={<ArrowDownwardIcon sx={{ fontSize: 15 }} />} label="Fill" dropDown />
+            <RibbonBtn icon={I.eraser} label="Clear" dropDown />
+          </div>
+          <div className="rg-editing-col">
+            <RibbonBtn icon={I.sort} label="Sort & Filter" dropDown />
+            <RibbonBtn icon={I.find} label="Find & Select" dropDown />
+          </div>
+        </div>
       </G>
     </>
   );
@@ -990,76 +1048,71 @@ export function Ribbon(props: RibbonProps) {
         }
         .ribbon-tab.ai-tab.active { color: var(--accent) !important; }
         .ribbon-tab.ai-tab.active::after { background: var(--accent) !important; }
-        .ai-tab-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: var(--accent);
-          flex-shrink: 0;
-        }
-        .ai-tab-dot.processing {
-          animation: pulse 1s ease-in-out infinite;
-        }
+        .ai-tab-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+        .ai-tab-dot.processing { animation: pulse 1s ease-in-out infinite; }
         .ribbon-spacer { flex: 1; }
-        .ribbon-tabs-right {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          padding: 0 12px;
-        }
+        .ribbon-tabs-right { display: flex; align-items: center; gap: 4px; padding: 0 12px; }
         .ribbon-tab-right {
-          padding: 4px 12px !important;
-          border-radius: 6px !important;
-          font-size: 12px !important;
-          font-weight: 500 !important;
-          color: var(--text-secondary) !important;
-          cursor: pointer !important;
-          background: transparent !important;
-          border: none !important;
-          font-family: var(--font-sans) !important;
-          transition: all 0.12s !important;
-          display: flex !important;
-          align-items: center !important;
-          gap: 4px !important;
+          padding: 4px 12px !important; border-radius: 6px !important; font-size: 12px !important;
+          font-weight: 500 !important; color: var(--text-secondary) !important; cursor: pointer !important;
+          background: transparent !important; border: none !important; font-family: var(--font-sans) !important;
+          transition: all 0.12s !important; display: flex !important; align-items: center !important; gap: 4px !important;
         }
         .ribbon-tab-right:hover { background: var(--bg-grid-hover) !important; color: var(--text-primary) !important; }
+
         .ribbon-toolbar {
           display: flex;
           align-items: stretch;
-          padding: 4px 12px 2px;
+          padding: 6px 12px 2px;
           background: var(--bg-ribbon);
-          min-height: 76px;
+          min-height: 86px;
           gap: 0;
-          overflow-x: hidden;
+          overflow-x: auto;
         }
         .ribbon-group {
           display: flex;
           flex-direction: column;
           align-items: stretch;
-          padding: 4px 10px 16px;
+          padding: 4px 8px 0;
           border-right: 1px solid var(--border-ribbon);
           position: relative;
           flex-shrink: 1;
           min-width: 0;
         }
         .ribbon-group:last-child { border-right: none; }
-        .ribbon-group-label {
+        .ribbon-group-footer {
           position: absolute;
           bottom: 0;
           left: 0;
           right: 0;
-          text-align: center;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 2px;
+          padding: 2px 4px 1px;
+          border-top: 1px solid var(--border-light);
+        }
+        .ribbon-group-label {
           font-size: 10px;
           font-weight: 500;
           color: var(--text-tertiary);
-          padding: 3px 0 1px;
-          border-top: 1px solid var(--border-light);
+          text-align: center;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
           text-transform: uppercase;
           letter-spacing: 0.3px;
         }
+        .ribbon-dialog-launcher {
+          display: flex;
+          align-items: center;
+          color: var(--text-tertiary);
+          cursor: pointer;
+          opacity: 0.5;
+          transition: opacity 0.15s;
+          flex-shrink: 0;
+        }
+        .ribbon-dialog-launcher:hover { opacity: 1; color: var(--text-primary); }
         .ribbon-group-content {
           display: flex;
           align-items: center;
@@ -1068,38 +1121,7 @@ export function Ribbon(props: RibbonProps) {
           flex: 1;
           min-height: 0;
         }
-        .ribbon-btn {
-          display: flex !important;
-          flex-direction: column !important;
-          align-items: center !important;
-          justify-content: center !important;
-          gap: 2px !important;
-          padding: 4px 8px !important;
-          border-radius: 6px !important;
-          cursor: pointer !important;
-          transition: all 0.15s ease !important;
-          background: transparent !important;
-          border: none !important;
-          font-family: var(--font-sans) !important;
-          min-width: 40px !important;
-          box-shadow: none !important;
-          flex-shrink: 1;
-        }
-        .ribbon-btn:hover { background: var(--bg-grid-hover) !important; transform: translateY(-1px); }
-        .ribbon-btn:active { background: var(--accent-bg) !important; transform: translateY(0); }
-        .ribbon-btn.active { background: var(--accent-bg) !important; outline: 1px solid var(--accent) !important; }
-        .ribbon-btn svg { width: 20px; height: 20px; color: var(--text-secondary); }
-        .ribbon-btn:hover svg { color: var(--text-primary); }
-        .ribbon-btn span { font-size: 10.5px; font-weight: 500; color: var(--text-secondary); white-space: nowrap; }
-        .ribbon-btn:hover span { color: var(--text-primary); }
-        .ribbon-btn-paste {
-          flex-direction: column !important;
-          padding: 4px 12px !important;
-          min-width: 52px !important;
-        }
-        .ribbon-btn-paste svg { width: 28px; height: 28px; color: var(--accent); }
-        .ribbon-btn-sm { min-width: 28px !important; padding: 3px 4px !important; }
-        .ribbon-btn-sm svg { width: 16px; height: 16px; }
+
         .ribbon-select {
           padding: 3px 6px;
           border: 1px solid var(--border);
@@ -1110,37 +1132,137 @@ export function Ribbon(props: RibbonProps) {
           color: var(--text-primary);
           outline: none;
           cursor: pointer;
+          transition: border-color 0.15s;
         }
         .ribbon-select:focus { border-color: var(--accent); }
+        .ribbon-select-sm { width: 48px; }
         .ribbon-checkbox {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 11px;
-          color: var(--text-secondary);
-          cursor: pointer;
-          white-space: nowrap;
+          display: flex; align-items: center; gap: 4px; font-size: 11px;
+          color: var(--text-secondary); cursor: pointer; white-space: nowrap;
         }
-        .ribbon-checkbox input[type="checkbox"] {
-          accent-color: var(--accent);
-          width: 12px;
-          height: 12px;
-        }
+        .ribbon-checkbox input[type="checkbox"] { accent-color: var(--accent); width: 12px; height: 12px; }
         .mono-sm { font-size: 11px; font-weight: 600; font-family: var(--font-mono); color: var(--text-secondary); }
-        .ribbon-separator {
-          width: 1px;
-          background: var(--border-ribbon);
-          margin: 4px 4px;
-          align-self: stretch;
-        }
-        .ai-spin {
+
+        .rb {
           display: inline-flex;
-          animation: spin 2s linear infinite;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 1px;
+          padding: 3px 6px;
+          border: 1px solid transparent;
+          border-radius: 4px;
+          background: transparent;
+          cursor: pointer;
+          font-family: var(--font-sans);
+          transition: all 0.12s ease;
+          white-space: nowrap;
+          min-width: 0;
+          line-height: 1;
         }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+        .rb:hover { background: #e5e7eb; border-color: #d1d5db; }
+        .rb:active { background: #d1d5db; }
+        .rb.active { background: #dbeafe; border-color: #93c5fd; }
+        .rb.accent { color: var(--accent); }
+        .rb-lg { padding: 4px 10px 2px; min-width: 48px; }
+        .rb-sm { padding: 2px 4px; min-width: 0; }
+        .rb-icon { display: flex; align-items: center; justify-content: center; color: #374151; }
+        .rb-lg .rb-icon { color: var(--accent); margin-bottom: 1px; }
+        .rb:hover .rb-icon { color: #111827; }
+        .rb-text { font-size: 10px; font-weight: 500; color: #6b7280; }
+        .rb-lg .rb-text { font-size: 10.5px; color: #374151; font-weight: 600; }
+        .rb-sm .rb-text { font-size: 9.5px; }
+        .rb:hover .rb-text { color: #111827; }
+
+        .rb-toggle {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 24px;
+          height: 24px;
+          padding: 0;
+          border: 1px solid transparent;
+          border-radius: 4px;
+          background: transparent;
+          cursor: pointer;
+          color: #374151;
+          transition: all 0.12s ease;
         }
+        .rb-toggle:hover { background: #e5e7eb; border-color: #d1d5db; }
+        .rb-toggle:active { background: #d1d5db; }
+        .rb-toggle.active { background: #dbeafe; border-color: #93c5fd; color: #2563eb; }
+
+        .rb-sep-v {
+          width: 1px;
+          height: 20px;
+          background: #e5e7eb;
+          margin: 0 2px;
+          flex-shrink: 0;
+        }
+
+        .rb-color-btn {
+          display: inline-flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 2px 4px;
+          border: 1px solid transparent;
+          border-radius: 4px;
+          background: transparent;
+          cursor: pointer;
+          color: #374151;
+          transition: all 0.12s ease;
+          gap: 0;
+        }
+        .rb-color-btn:hover { background: #e5e7eb; border-color: #d1d5db; }
+        .rb-color-stripe { width: 16px; height: 3px; border-radius: 1px; margin-top: 1px; }
+
+        .rg-clipboard { display: flex; align-items: stretch; gap: 4px; }
+        .rg-clipboard-side { display: flex; flex-direction: column; gap: 1px; }
+        .rg-clipboard-side .rb { flex-direction: row; gap: 4px; justify-content: flex-start; padding: 2px 8px; min-width: 0; }
+        .rg-clipboard-side .rb-text { font-size: 10px; }
+
+        .rg-font { display: flex; flex-direction: column; gap: 3px; min-width: 200px; }
+        .rg-font-row { display: flex; align-items: center; gap: 2px; }
+        .rg-font-row .rb-toggle { width: 22px; height: 22px; }
+
+        .rg-align { display: flex; flex-direction: column; gap: 3px; }
+        .rg-align-row { display: flex; align-items: center; gap: 2px; }
+        .rg-align-row .rb { padding: 2px 6px; }
+        .rg-align-row .rb-toggle { width: 22px; height: 22px; }
+        .rg-align-row .rb-text { font-size: 9.5px; }
+
+        .rg-number { display: flex; flex-direction: column; gap: 4px; min-width: 110px; }
+        .rg-number-row { display: flex; align-items: center; gap: 2px; }
+        .rg-number-row .rb { padding: 2px 4px; }
+        .rg-number-row .rb-toggle { width: 22px; height: 22px; font-size: 10px; }
+
+        .rg-styles { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+        .rg-styles .rb { flex-direction: row; gap: 4px; align-items: center; justify-content: flex-start; padding: 3px 8px; min-width: 0; }
+        .rg-styles .rb-text { font-size: 10px; }
+        .rg-cell-styles { display: flex; gap: 3px; align-items: center; }
+        .rg-style-box {
+          width: 36px; height: 28px; border-radius: 3px; border: 1px solid #e5e7eb;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 7px; font-weight: 600; cursor: pointer; transition: all 0.12s;
+        }
+        .rg-style-box:hover { border-color: #93c5fd; }
+        .rg-style-normal { background: #f9fafb; color: #6b7280; }
+        .rg-style-bad { background: #fef2f2; color: #dc2626; }
+        .rg-style-good { background: #f0fdf4; color: #16a34a; }
+        .rg-style-neutral { background: #fffbeb; color: #d97706; }
+
+        .rg-cells { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
+        .rg-cells .rb { flex-direction: row; gap: 4px; align-items: center; justify-content: flex-start; padding: 3px 8px; min-width: 0; }
+        .rg-cells .rb-text { font-size: 10px; }
+
+        .rg-editing { display: flex; gap: 6px; }
+        .rg-editing-col { display: flex; flex-direction: column; gap: 3px; }
+        .rg-editing-col .rb { flex-direction: row; gap: 4px; align-items: center; justify-content: flex-start; padding: 3px 8px; min-width: 0; }
+        .rg-editing-col .rb-text { font-size: 10px; }
+
+        .ai-spin { display: inline-flex; animation: spin 2s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
     </div>
   );
