@@ -7,6 +7,22 @@ import React, {
   useEffect,
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import Chip from '@mui/material/Chip';
+import TextField from '@mui/material/TextField';
+import CloseIcon from '@mui/icons-material/Close';
+import SendIcon from '@mui/icons-material/Send';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import ViewColumnIcon from '@mui/icons-material/ViewColumn';
+import SaveIcon from '@mui/icons-material/Save';
+import BuildIcon from '@mui/icons-material/Build';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import TableChartIcon from '@mui/icons-material/TableChart';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import type { AIPanelTab } from '@/app/studio/page';
 import type { FormulaGenerationResult } from '@/lib/ai/generation';
 import type { ValidationResult } from '@/lib/ai/validator';
@@ -81,53 +97,13 @@ export interface AiPanelProps {
 function ActionIcon({ type }: { type: string }) {
   switch (type) {
     case 'table':
-      return (
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          className="h-3.5 w-3.5"
-        >
-          <path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" />
-        </svg>
-      );
+      return <TableChartIcon sx={{ fontSize: 14 }} />;
     case 'chart':
-      return (
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          className="h-3.5 w-3.5"
-        >
-          <path d="M18 20V10M12 20V4M6 20v-6" />
-        </svg>
-      );
+      return <BarChartIcon sx={{ fontSize: 14 }} />;
     case 'line':
-      return (
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          className="h-3.5 w-3.5"
-        >
-          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-        </svg>
-      );
+      return <ShowChartIcon sx={{ fontSize: 14 }} />;
     default:
-      return (
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          className="h-3.5 w-3.5"
-        >
-          <circle cx="12" cy="12" r="10" />
-        </svg>
-      );
+      return <AutoAwesomeIcon sx={{ fontSize: 14 }} />;
   }
 }
 
@@ -362,7 +338,7 @@ export function AiPanel({
   }, [input, onSend]);
 
   const handleKeyDown = useCallback(
-    (e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+    (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         handleSend();
@@ -385,20 +361,11 @@ export function AiPanel({
           <span className={`ai-dot ${aiProcessing ? 'processing' : ''}`} />
           AI Analyst
         </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 4 }}>
-          <button className="btn-icon" title="Settings" onClick={onClose}>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              width="16"
-              height="16"
-            >
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+        <Box sx={{ marginLeft: 'auto', display: 'flex', gap: 0.5 }}>
+          <IconButton size="small" title="Close" onClick={onClose}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </Box>
       </div>
       <div className="panel-tabs">
         {TABS.map((t) => (
@@ -450,78 +417,58 @@ export function AiPanel({
           <div className="chat-input-area">
             <div className="quick-actions">
               {QUICK_ACTIONS.map((a) => (
-                <span key={a.label} className="quick-action">
-                  {a.icon === 'upload' && (
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      className="h-3 w-3"
-                    >
-                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
-                    </svg>
-                  )}
-                  {a.icon === 'chart' && (
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      className="h-3 w-3"
-                    >
-                      <path d="M18 20V10M12 20V4M6 20v-6" />
-                    </svg>
-                  )}
-                  {a.icon === 'column' && (
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      className="h-3 w-3"
-                    >
-                      <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
-                    </svg>
-                  )}
-                  {a.icon === 'save' && (
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      className="h-3 w-3"
-                    >
-                      <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
-                      <rect x="8" y="2" width="8" height="4" rx="1" />
-                    </svg>
-                  )}
-                  {a.label}
-                </span>
+                <Chip
+                  key={a.label}
+                  icon={
+                    a.icon === 'upload' ? <CloudUploadIcon sx={{ fontSize: 14 }} /> :
+                    a.icon === 'chart' ? <BarChartIcon sx={{ fontSize: 14 }} /> :
+                    a.icon === 'column' ? <ViewColumnIcon sx={{ fontSize: 14 }} /> :
+                    <SaveIcon sx={{ fontSize: 14 }} />
+                  }
+                  label={a.label}
+                  variant="outlined"
+                  size="small"
+                  className="quick-action"
+                />
               ))}
             </div>
             <div className="chat-input-wrap">
-              <textarea
-                ref={textareaRef}
-                className="chat-input"
-                rows={1}
+              <TextField
+                multiline
+                maxRows={4}
+                fullWidth
+                size="small"
                 placeholder="Ask the analyst anything... (Ctrl+Enter to send)"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
+                inputRef={textareaRef}
+                variant="outlined"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    fontSize: 13,
+                    fontFamily: 'var(--font-sans)',
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    border: 'none',
+                  },
+                }}
               />
-              <button className="chat-send" onClick={handleSend} disabled={!input.trim()}>
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="h-4 w-4"
-                >
-                  <line x1="22" y1="2" x2="11" y2="13" />
-                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
-                </svg>
-              </button>
+              <IconButton
+                size="small"
+                onClick={handleSend}
+                disabled={!input.trim()}
+                sx={{
+                  backgroundColor: 'primary.main',
+                  color: 'white',
+                  width: 32,
+                  height: 32,
+                  '&:hover': { backgroundColor: 'primary.dark' },
+                  '&.Mui-disabled': { backgroundColor: 'action.disabledBackground', color: 'action.disabled' },
+                }}
+              >
+                <SendIcon sx={{ fontSize: 16 }} />
+              </IconButton>
             </div>
             <div className="chat-hint">
               {aiConnected

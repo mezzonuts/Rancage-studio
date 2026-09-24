@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useBYOK } from '@/lib/byok/context';
 import { BYOKProvider } from '@/lib/byok';
+import { MUIThemeProvider } from '@/lib/mui';
 import { useFormulaGenerator, buildTableContextFromGrid, resolveColumnRefs } from '@/lib/ai/useFormulaGenerator';
 import { BYOKManager } from '@/components/BYOKManager';
 import { SpreadsheetGrid } from '@/components/SpreadsheetGrid';
@@ -88,9 +89,11 @@ export type AIPanelTab = 'Chat' | 'Replays' | 'Templates' | 'Scripts' | 'Setting
 
 export default function StudioPage() {
   return (
-    <BYOKProvider>
-      <StudioApp />
-    </BYOKProvider>
+    <MUIThemeProvider>
+      <BYOKProvider>
+        <StudioApp />
+      </BYOKProvider>
+    </MUIThemeProvider>
   );
 }
 
