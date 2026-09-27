@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Button from '@mui/material/Button';
@@ -329,7 +329,7 @@ function R({
   );
 }
 
-function G({ children, label }: { children: React.ReactNode; label: string }) {
+const G = memo(function G({ children, label }: { children: React.ReactNode; label: string }) {
   return (
     <div className="ribbon-group">
       <div className="ribbon-group-content">{children}</div>
@@ -341,7 +341,7 @@ function G({ children, label }: { children: React.ReactNode; label: string }) {
       </div>
     </div>
   );
-}
+});
 
 function FileRibbon({
   onNew,
@@ -382,7 +382,7 @@ function FileRibbon({
   );
 }
 
-function RibbonBtn({
+const RibbonBtn = memo(function RibbonBtn({
   icon,
   label,
   onClick,
@@ -412,9 +412,9 @@ function RibbonBtn({
       {dropDown && <KeyboardArrowDownIcon sx={{ fontSize: 10, ml: -0.3 }} />}
     </button>
   );
-}
+});
 
-function RibbonToggle({
+const RibbonToggle = memo(function RibbonToggle({
   icon,
   onClick,
   active,
@@ -435,9 +435,9 @@ function RibbonToggle({
       {icon}
     </button>
   );
-}
+});
 
-function RibbonDropdown({
+const RibbonDropdown = memo(function RibbonDropdown({
   label,
   icon,
   children,
@@ -480,9 +480,9 @@ function RibbonDropdown({
       )}
     </div>
   );
-}
+});
 
-function MenuItem({
+const MenuItem = memo(function MenuItem({
   label,
   onClick,
   icon,
@@ -504,13 +504,13 @@ function MenuItem({
       <span>{label}</span>
     </button>
   );
-}
+});
 
-function MenuSeparator() {
+const MenuSeparator = memo(function MenuSeparator() {
   return <div className="ribbon-menu-separator" />;
-}
+});
 
-function ColorPalette({
+const ColorPalette = memo(function ColorPalette({
   onSelect,
   onClose,
 }: {
@@ -558,18 +558,18 @@ function ColorPalette({
           />
         ))}
       </div>
-      <MenuSeparator />
-      <label className="ribbon-menu-item" style={{ cursor: 'pointer' }}>
-        More Colors...
-        <input
-          type="color"
-          style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
-          onChange={(e) => { onSelect(e.target.value); onClose(); }}
-        />
-      </label>
-    </div>
+<MenuSeparator />
+        <label className="ribbon-menu-item" style={{ cursor: 'pointer' }}>
+          More Colors...
+          <input
+            type="color"
+            style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+            onChange={(e) => { onSelect(e.target.value); onClose(); }}
+          />
+        </label>
+</div>
   );
-}
+});
 
 function HomeRibbon(props: RibbonProps) {
   const [fillColor, setFillColor] = useState('#facc15');
