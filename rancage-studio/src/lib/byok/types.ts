@@ -76,6 +76,43 @@ export const DEFAULT_CONFIG: BYOKConfig = {
 
 export const STORAGE_KEY = 'rancage-byok-config';
 
+const SESSION_KEY = 'rancage-session-key';
+
+function getSessionKey(): string {
+  if (typeof window === 'undefined') return '';
+  let key = sessionStorage.getItem(SESSION_KEY);
+  if (!key) {
+    key = crypto.randomUUID();
+    sessionStorage.setItem(SESSION_KEY, key);
+  }
+  return key;
+}
+
+function obfuscate(text: string): string {
+  if (!text) return '';
+  const key = getSessionKey();
+  let result = '';
+  for (let i = 0; i < text.length; i++) {
+    result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+  }
+  return btoa(result);
+}
+
+function deobfuscate(encoded: string): string {
+  if (!encoded) return '';
+  try {
+    const key = getSessionKey();
+    const text = atob(encoded);
+    let result = '';
+    for (let i = 0; i < text.length; i++) {
+      result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+    }
+    return result;
+  } catch {
+    return '';
+  }
+}
+
 export function getProviderConfig(provider: ProviderId): ProviderConfig {
   const found = PROVIDERS.find((p) => p.id === provider);
   if (found) return found;
@@ -89,6 +126,7 @@ export function loadConfig(): BYOKConfig {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
+      if (parsed.apiKey) parsed.apiKey = deobfuscate(parsed.apiKey);
       return { ...DEFAULT_CONFIG, ...parsed };
     }
   } catch {
@@ -99,5 +137,7 @@ export function loadConfig(): BYOKConfig {
 
 export function saveConfig(config: BYOKConfig): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+  const toSave = { ...config };
+  if (toSave.apiKey) toSave.apiKey = obfuscate(toSave.apiKey);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
 }

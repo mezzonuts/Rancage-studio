@@ -13,6 +13,7 @@ import { FormulaBar } from '@/components/FormulaBar';
 import { AiPanel } from '@/components/AiPanel';
 import { UploadModal } from '@/components/UploadModal';
 import { ErrorBoundary } from '@/lib/a11y';
+import { AuthGuard } from '@/lib/auth/guard';
 import { createDefaultDashboard, type DashboardState } from '@/lib/dashboard/types';
 import { loadDashboards, saveDashboard } from '@/lib/dashboard/store';
 import { exportToExcel } from '@/lib/export/excel';
@@ -91,7 +92,9 @@ export default function StudioPage() {
   return (
     <MUIThemeProvider>
       <BYOKProvider>
-        <StudioApp />
+        <AuthGuard>
+          <StudioApp />
+        </AuthGuard>
       </BYOKProvider>
     </MUIThemeProvider>
   );

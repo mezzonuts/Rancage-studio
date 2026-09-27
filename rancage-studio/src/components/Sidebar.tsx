@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback } from 'react';
+import { useAuth } from '@/lib/auth/context';
 
 interface NavItem {
   id: string;
@@ -82,6 +83,7 @@ const NAV_ICONS: Record<string, React.ReactNode> = {
 };
 
 export function Sidebar({ activeNav, onNavChange, onImportClick }: SidebarProps) {
+  const { user, logout } = useAuth();
   const handleClick = useCallback(
     (item: NavItem) => {
       if (item.id === 'import') {
@@ -128,11 +130,11 @@ export function Sidebar({ activeNav, onNavChange, onImportClick }: SidebarProps)
         ))}
       </nav>
       <div className="sidebar-footer">
-        <div className="user-info">
-          <div className="user-avatar">PC</div>
+        <div className="user-info" onClick={logout} title="Click to sign out">
+          <div className="user-avatar">{user?.avatar ?? 'U'}</div>
           <div>
-            <div className="user-name">Andika</div>
-            <div className="user-email">andikasosha@gmail.com</div>
+            <div className="user-name">{user?.name ?? 'User'}</div>
+            <div className="user-email">{user?.email ?? ''}</div>
           </div>
         </div>
       </div>
