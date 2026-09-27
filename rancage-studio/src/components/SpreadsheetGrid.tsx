@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
+import { useState, useCallback, useRef, useMemo, useEffect, memo } from 'react';
 import type {
   CellValue,
   CellPosition,
@@ -15,6 +15,123 @@ import {
   ROW_HEADER_WIDTH,
 } from '@/lib/grid/types';
 import { createGridFromData, setCell, normalizeRange, isInRange } from '@/lib/grid/store';
+
+interface ColHeaderCellProps {
+  col: { i: number; x: number; w: number };
+  sLeft: number;
+  cw: number;
+}
+const ColHeaderCell = memo(function ColHeaderCell({ col, sLeft, cw }: ColHeaderCellProps) {
+  if (col.x + col.w < sLeft - 200 || col.x > sLeft + cw + 200) return null;
+  return (
+    <div
+      className="spreadsheet-col-cell"
+      style={{ width: col.w, height: HEADER_HEIGHT, minWidth: col.w }}
+      role="columnheader"
+      aria-label={`Column ${colLetter(col.i)}`}
+    >
+      {colLetter(col.i)}
+    </div>
+  );
+});
+
+interface RowHeaderCellProps {
+  i: number;
+  y: number;
+}
+const RowHeaderCell = memo(function RowHeaderCell({ i, y }: RowHeaderCellProps) {
+  return (
+    <div
+      key={i}
+      className="spreadsheet-row-cell"
+      style={{
+        height: DEFAULT_ROW_HEIGHT,
+        position: 'absolute',
+        top: y - HEADER_HEIGHT,
+        width: ROW_HEADER_WIDTH,
+      }}
+      role="rowheader"
+      aria-label={`Row ${i + 1}`}
+    >
+      {i + 1}
+    </div>
+  );
+});
+
+interface DataCellProps {
+  col: { i: number; x: number; w: number };
+  i: number;
+  cellStyle: React.CSSProperties;
+  className: string;
+  onDown: (pos: CellPosition, e: React.MouseEvent) => void;
+  onEnter: (pos: CellPosition) => void;
+  startEd: (pos: CellPosition) => void;
+  isEd: boolean;
+  edVal: string;
+  commitEd: () => void;
+  setEdVal: (val: string) => void;
+  formatCellValue: (val: CellValue, fmt?: CellFormat) => string;
+  val: CellValue | null | undefined;
+  fmt: CellFormat | undefined;
+  isHi: boolean;
+  isNum: boolean;
+  isHeader: boolean;
+  isPositive: boolean;
+  isNegative: boolean;
+}
+const DataCell = memo(function DataCell({
+  col,
+  i,
+  cellStyle,
+  className,
+  onDown,
+  onEnter,
+  startEd,
+  isEd,
+  edVal,
+  commitEd,
+  setEdVal,
+  formatCellValue,
+  val,
+  fmt,
+  isHi,
+  isNum,
+  isHeader,
+  isPositive,
+  isNegative,
+}: DataCellProps) {
+  const pos = { row: i, col: col.i };
+  return (
+    <div
+      key={col.i}
+      className={`spreadsheet-cell ${isHi ? 'selected' : ''} ${isNum ? 'num' : ''} ${isHeader ? 'header-cell' : ''} ${isPositive ? 'positive' : ''} ${isNegative ? 'negative' : ''}`}
+      style={cellStyle}
+      onMouseDown={(e) => onDown(pos, e as React.MouseEvent)}
+      onMouseEnter={() => onEnter(pos)}
+      onDoubleClick={() => startEd(pos)}
+      role="gridcell"
+      aria-rowindex={i + 1}
+      aria-colindex={col.i + 1}
+      aria-selected={isHi}
+      aria-label={`Cell ${colLetter(col.i)}${i + 1}`}
+    >
+      {isEd ? (
+        <input
+          autoFocus
+          value={edVal}
+          onChange={(e) => setEdVal(e.target.value)}
+          onBlur={commitEd}
+          className="spreadsheet-cell-input"
+          style={{ width: col.w }}
+        />
+      ) : (
+        <div className="spreadsheet-cell-content">
+          {formatCellValue(val ?? null, fmt)}
+        </div>
+      )}
+    </div>
+  );
+});
 
 export interface SpreadsheetGridProps {
   data: CellValue[][];
@@ -283,70 +400,52 @@ export function SpreadsheetGrid({
   const ns = sel ? normalizeRange(sel) : null;
 
   return (
-    <div
-      ref={cRef}
-      className={`spreadsheet-container ${className ?? ''} ${!showGridlines ? 'no-gridlines' : ''} ${!showHeadings ? 'no-headings' : ''}`}
-      style={{ height: '100%' }}
-      onScroll={onSc}
-      onMouseUp={onUp}
-      onKeyDown={onKey}
-      tabIndex={0}
-    >
+<div
+          ref={cRef}
+          className={`spreadsheet-container ${className ?? ''} ${!showGridlines ? 'no-gridlines' : ''} ${!showHeadings ? 'no-headings' : ''}`}
+          style={{ height: '100%' }}
+          onScroll={onSc}
+          onMouseUp={onUp}
+          onKeyDown={onKey}
+          tabIndex={0}
+          role="grid"
+          aria-label="Spreadsheet"
+        >
       <div style={{ width: tw, height: th, position: 'relative' }}>
-        {showHeadings && (
-          <>
-            <div
-              className="spreadsheet-col-header"
-              style={{ height: HEADER_HEIGHT }}
-            >
+{showHeadings && (
+            <>
               <div
-                className="spreadsheet-corner"
-                style={{ width: ROW_HEADER_WIDTH, height: HEADER_HEIGHT }}
-              />
-              {cP.map(
-                (col) =>
-                  col.x + col.w > sLeft - 200 &&
-                  col.x < sLeft + cw + 200 && (
-                    <div
-                      key={col.i}
-                      className="spreadsheet-col-cell"
-                      style={{
-                        width: col.w,
-                        height: HEADER_HEIGHT,
-                        minWidth: col.w,
-                      }}
-                    >
-                      {colLetter(col.i)}
-                    </div>
-                  ),
-              )}
-            </div>
-            <div
-              className="spreadsheet-row-headers"
-              style={{
-                position: 'absolute',
-                top: HEADER_HEIGHT,
-                width: ROW_HEADER_WIDTH,
-                height: th - HEADER_HEIGHT,
-              }}
-            >
-              {vRows.map(({ i, y }) => (
+                className="spreadsheet-col-header"
+                style={{ height: HEADER_HEIGHT }}
+                role="row"
+                aria-label="Column headers"
+              >
                 <div
-                  key={i}
-                  className="spreadsheet-row-cell"
-                  style={{
-                    height: DEFAULT_ROW_HEIGHT,
-                    position: 'absolute',
-                    top: y - HEADER_HEIGHT,
-                    width: ROW_HEADER_WIDTH,
-                  }}
-                >
-                  {i + 1}
-                </div>
-              ))}
-            </div>
-          </>
-        )}
+                  className="spreadsheet-corner"
+                  style={{ width: ROW_HEADER_WIDTH, height: HEADER_HEIGHT }}
+                  role="columnheader"
+                />
+                {cP.map((col) =>
+                  <ColHeaderCell key={col.i} col={col} sLeft={sLeft} cw={cw} />
+                )}
+              </div>
+              <div
+                className="spreadsheet-row-headers"
+                style={{
+                  position: 'absolute',
+                  top: HEADER_HEIGHT,
+                  width: ROW_HEADER_WIDTH,
+                  height: th - HEADER_HEIGHT,
+                }}
+                role="row"
+                aria-label="Row headers"
+              >
+                {vRows.map(({ i, y }) => (
+                  <RowHeaderCell key={i} i={i} y={y} />
+                ))}
+              </div>
+            </>
+          )}
 
         <div
           style={{
@@ -355,16 +454,17 @@ export function SpreadsheetGrid({
             left: showHeadings ? ROW_HEADER_WIDTH : 0,
           }}
         >
-          {vRows.map(({ i, y }) => (
-            <div
-              key={i}
-              style={{
-                position: 'absolute',
-                top: y - HEADER_HEIGHT,
-                display: 'flex',
-              }}
-            >
-              {cP.map((col) => {
+{vRows.map(({ i, y }) => (
+              <div
+                key={i}
+                style={{
+                  position: 'absolute',
+                  top: y - HEADER_HEIGHT,
+                  display: 'flex',
+                }}
+                role="row"
+              >
+                {cP.map((col) => {
                 if (
                   col.x + col.w < sLeft - 200 ||
                   col.x > sLeft + cw + 200
@@ -434,29 +534,28 @@ export function SpreadsheetGrid({
                 };
 
                 return (
-                  <div
+                  <DataCell
                     key={col.i}
+                    col={col}
+                    i={i}
+                    cellStyle={cellStyle}
                     className={`spreadsheet-cell ${isHi ? 'selected' : ''} ${isNum ? 'num' : ''} ${isHeader ? 'header-cell' : ''} ${isPositive ? 'positive' : ''} ${isNegative ? 'negative' : ''}`}
-                    style={cellStyle}
-                    onMouseDown={(e) => onDown(pos, e)}
-                    onMouseEnter={() => onEnter(pos)}
-                    onDoubleClick={() => startEd(pos)}
-                  >
-                    {isEd ? (
-                      <input
-                        autoFocus
-                        value={edVal}
-                        onChange={(e) => setEdVal(e.target.value)}
-                        onBlur={commitEd}
-                        className="spreadsheet-cell-input"
-                        style={{ width: col.w }}
-                      />
-                    ) : (
-                      <div className="spreadsheet-cell-content">
-                        {formatCellValue(val ?? null, fmt)}
-                      </div>
-                    )}
-                  </div>
+                    onDown={onDown}
+                    onEnter={onEnter}
+                    startEd={startEd}
+                    isEd={isEd}
+                    edVal={edVal}
+                    commitEd={commitEd}
+                    setEdVal={setEdVal}
+                    formatCellValue={formatCellValue}
+                    val={val}
+                    fmt={fmt}
+                    isHi={isHi}
+                    isNum={isNum}
+                    isHeader={isHeader}
+                    isPositive={isPositive}
+                    isNegative={isNegative}
+                  />
                 );
               })}
             </div>
