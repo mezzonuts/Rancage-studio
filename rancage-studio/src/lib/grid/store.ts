@@ -127,3 +127,23 @@ export function isInRange(pos: CellPosition, range: CellRange): boolean {
     pos.row >= n.start.row && pos.row <= n.end.row && pos.col >= n.start.col && pos.col <= n.end.col
   );
 }
+
+export function cellRef(pos: { row: number; col: number }): string {
+  let r = '';
+  let n = pos.col;
+  while (n >= 0) {
+    r = String.fromCharCode(65 + (n % 26)) + r;
+    n = Math.floor(n / 26) - 1;
+  }
+  return `${r}${pos.row + 1}`;
+}
+
+export function parseRef(ref: string): { row: number; col: number } | null {
+  const match = ref.match(/^([A-Z]+)(\d+)$/);
+  if (!match) return null;
+  let col = 0;
+  for (const ch of match[1]!) {
+    col = col * 26 + (ch.charCodeAt(0) - 64);
+  }
+  return { row: parseInt(match[2]!, 10) - 1, col: col - 1 };
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, memo } from 'react';
 
 export interface FormulaBarProps {
   selectedCell: string | null;
@@ -8,7 +8,7 @@ export interface FormulaBarProps {
   onFormulaChange?: (formula: string) => void;
 }
 
-export function FormulaBar({ selectedCell, formula, onFormulaChange }: FormulaBarProps) {
+export const FormulaBar = memo(function FormulaBar({ selectedCell, formula, onFormulaChange }: FormulaBarProps) {
   const [val, setVal] = useState(formula);
 
   useEffect(() => { setVal(formula); }, [formula]);
@@ -73,4 +73,4 @@ export function FormulaBar({ selectedCell, formula, onFormulaChange }: FormulaBa
       `}</style>
     </div>
   );
-}
+});

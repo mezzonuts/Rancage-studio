@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, memo } from 'react';
 import type { DashboardState, WidgetConfig, WidgetType } from '@/lib/dashboard/types';
 import { createWidget } from '@/lib/dashboard/types';
 import { saveDashboard } from '@/lib/dashboard/store';
@@ -45,7 +45,7 @@ const WIDGET_ICONS: Record<WidgetType, React.ReactNode> = {
   kpi: <SpeedIcon sx={{ fontSize: 12 }} />,
 };
 
-export function DashboardCanvas({ dashboard, onDashboardChange, queryFn, onExportExcel, onExportHTML }: DashboardCanvasProps) {
+export const DashboardCanvas = memo(function DashboardCanvas({ dashboard, onDashboardChange, queryFn, onExportExcel, onExportHTML }: DashboardCanvasProps) {
   const [dash, setDash] = useState(dashboard);
   const [editingWidget, setEditingWidget] = useState<string | null>(null);
 
@@ -166,7 +166,7 @@ export function DashboardCanvas({ dashboard, onDashboardChange, queryFn, onExpor
       </Box>
     </Box>
   );
-}
+};
 
 function Toolbar({
   onAdd,
@@ -219,7 +219,7 @@ function Toolbar({
       </Box>
     </Box>
   );
-}
+};
 
 function WidgetEditor({
   widget,
@@ -275,4 +275,4 @@ function WidgetEditor({
       </Button>
     </Box>
   );
-}
+});

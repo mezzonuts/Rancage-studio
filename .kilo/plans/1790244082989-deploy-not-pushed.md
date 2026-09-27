@@ -1,210 +1,165 @@
-# Ribbon Layout Fix — All 4 Issues
+# Next Phase: HIGH/MEDIUM/LOW Gaps After Critical Blockers
 
-## Problems (all still present after previous attempt)
+## Status After Critical Blockers
 
-1. **Group collapse / too small** — Groups shrink unevenly, some too narrow
-2. **Label overlap content** — Absolute-positioned labels overlap button content
-3. **Uneven spacing** — Gap between groups inconsistent
-4. **Horizontal scroll / cutoff** — Toolbar overflows viewport
+All 7 critical blockers FIXED:
+1. ✅ Auth system (login, demo mode, session)
+2. ✅ CI/CD pipeline (.github/workflows/ci.yml)
+3. ✅ Error boundary (global-error.tsx)
+4. ✅ Key encryption (XOR+base64 in localStorage)
+5. ✅ Security headers (public/_headers)
+6. ✅ Env config (.env.example)
+7. ✅ Hardcoded user removed (Sidebar now uses useAuth)
 
-## Root Cause
+---
 
-The previous fix added `flex-shrink: 0` + `min-width: fit-content` but these conflict with each other:
-- `min-width: fit-content` makes groups as wide as their content → too wide on Font group (dropdowns ~150px), fine on Styles group (2 buttons ~80px)
-- `flex-shrink: 0` prevents groups from shrinking → total width exceeds viewport → horizontal scroll
-- `.ribbon-group-content` lost `flex: 1` → content doesn't fill height → label overlaps content when group is tall
-- `padding-bottom: 18px` on `.ribbon-group` is wasted because `.ribbon-group-content` doesn't stretch
+## HIGH Priority (Next Sprint)
 
-## Fix — CSS Only (single file: `rancage-studio/src/components/Ribbon.tsx`)
+### HIGH-1: SpreadsheetGrid Accessibility + Virtualization
 
-All changes are in the `<style>` block starting at line 932. No JSX changes needed.
+**File:** `src/components/SpreadsheetGrid.tsx`
 
-### Change 1: `.ribbon-group` — allow shrink, consistent sizing
+**Tasks:**
+1. Add ARIA grid roles:
+   - Container: `role="grid"`, `aria-label="Spreadsheet"`
+   - Row: `role="row"`
+   - Cell: `role="gridcell"`, `aria-rowindex={r+1}`, `aria-colindex={c+1}`, `aria-selected={isSelected}`
+   - Column headers: `role="columnheader"`
+   - Row headers: `role="rowheader"`
 
-```css
-/* BEFORE (current) */
-.ribbon-group {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0 8px;
-  padding-bottom: 18px;
-  border-right: 1px solid var(--border-ribbon);
-  position: relative;
-  flex-shrink: 0;
-  min-width: fit-content;
-}
+2. Add virtualization (react-window or custom):
+   - Only render visible rows + small buffer
+   - Column virtualization for wide sheets
+   - Maintain scroll position
 
-/* AFTER */
-.ribbon-group {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  padding: 4px 10px 16px;
-  border-right: 1px solid var(--border-ribbon);
-  position: relative;
-  flex-shrink: 1;
-  min-width: 0;
-}
+3. Add React.memo to cell components
+
+### HIGH-2: Memoization Across Components
+
+**Files to wrap with React.memo:**
+- `Ribbon.tsx` — `RibbonBtn`, `RibbonToggle`, `G`, `ColorPalette`, `MenuItem`
+- `SpreadsheetGrid.tsx` — Cell renderer, row renderer
+- `AiPanel.tsx` — Message bubbles, tool calls
+- `DashboardCanvas.tsx` — Widget containers
+- `FormulaBar.tsx` — Input, suggestions
+- `Sidebar.tsx` — Nav items
+
+### HIGH-3: Split StudioApp Monolith (1,376 lines)
+
+**Split into:**
+```
+src/app/studio/
+├── components/
+│   ├── StudioHeader.tsx      # Tab bar + formula bar
+│   ├── StudioGrid.tsx        # SpreadsheetGrid wrapper
+│   ├── StudioSidebar.tsx     # Sidebar (already separate)
+│   ├── StudioRibbon.tsx      # Ribbon (already separate)
+│   ├── StudioAiPanel.tsx     # AiPanel (already separate)
+│   └── StudioFooter.tsx      # Status bar
+├── hooks/
+│   ├── useGridState.ts       # gridData, cellFormats, selection
+│   ├── useClipboard.ts       # copy/cut/paste/formatPainter
+│   ├── useFormatting.ts      # font, alignment, number, borders
+│   ├── useRowsCols.ts        # insert/delete row/col
+│   ├── useUndoRedo.ts        # undo/redo stack
+│   └── useKeyboard.ts        # keyboard shortcuts
+├── utils/
+│   └── constants.ts          # SAMPLE_DATA, defaults
+└── page.tsx                  # Main composer (~50 lines)
 ```
 
-Key changes:
-- `align-items: stretch` — content fills width evenly
-- `padding: 4px 10px 16px` — 16px bottom reserves space for label (replaces `padding-bottom: 18px`)
-- `flex-shrink: 1` — groups CAN shrink to fit toolbar
-- `min-width: 0` — allows shrinking below content width (needed for flex)
+---
 
-### Change 2: `.ribbon-group-content` — fill available space
+## MEDIUM Priority
 
-```css
-/* BEFORE (current) */
-.ribbon-group-content {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 0;
-}
+### MEDIUM-1: Project-Specific README.md
 
-/* AFTER */
-.ribbon-group-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  flex: 1;
-  min-height: 0;
-}
+**Replace generic Next.js README with:**
+- Project description (AI spreadsheet + dashboard)
+- Features list (Excel 365 ribbon, BYOK, AI analyst, etc.)
+- Quick start (npm install, npm run dev, npm run build)
+- Architecture diagram
+- Deployment (GitHub Pages, Vercel)
+- Contributing guide
+
+### MEDIUM-2: Remove Duplicate FileUpload
+
+**Files:**
+- `src/components/FileUpload.tsx` (314 lines, Tailwind, unused)
+- `src/components/UploadModal.tsx` (160 lines, MUI, used)
+
+**Action:** Delete `FileUpload.tsx`, verify `UploadModal` covers all use cases.
+
+### MEDIUM-3: Tailwind + CSS Vars Conflict
+
+**Issue:** `globals.css` uses CSS variables, `FileUpload.tsx` uses Tailwind classes.
+
+**Resolution:** Since removing `FileUpload.tsx`, conflict largely resolved. Audit remaining Tailwind usage.
+
+### MEDIUM-4: Formula Autocomplete
+
+**File:** `src/components/FormulaBar.tsx`
+
+**Add:**
+- `onKeyDown` for `=` trigger
+- Suggestion dropdown with functions (SUM, AVERAGE, IF, VLOOKUP, etc.)
+- Cell reference autocomplete (A1, B2:C10)
+- Syntax highlighting for functions
+
+---
+
+## LOW Priority
+
+### LOW-1: Split Ribbon.tsx (1,400+ lines)
+
+**Extract sub-components:**
+- `RibbonTabBar.tsx` — Tab switching
+- `RibbonToolbar.tsx` — Group containers
+- `RibbonGroup.tsx` — Individual group (Clipboard, Font, etc.)
+- `RibbonButton.tsx` — Base button variants
+- `RibbonDropdown.tsx` — Generic dropdown
+- `ColorPalette.tsx` — Theme/standard colors
+- `RibbonStyles.tsx` — All CSS-in-JS styles
+
+### LOW-2: Dark Mode Support
+
+**Files:** `src/lib/mui/provider.tsx`, `src/app/globals.css`
+
+**Add:**
+- Theme toggle in UI
+- CSS variables for dark mode
+- `useMediaQuery` for system preference
+- Persist in localStorage
+
+### LOW-3: Skip Links
+
+**File:** `src/app/layout.tsx`
+
+**Add at top of body:**
+```tsx
+<a href="#main-content" className="skip-link">Skip to main content</a>
+<main id="main-content">...</main>
 ```
 
-Key: `flex: 1` + `justify-content: center` — content fills height and centers horizontally within each group.
+---
 
-### Change 3: `.ribbon-group-label` — fix for stretch alignment
+## Files Summary
 
-```css
-/* BEFORE (current) */
-.ribbon-group-label {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  text-align: center;
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--text-tertiary);
-  padding: 2px 0;
-  border-top: 1px solid var(--border-light);
-}
+| Priority | Files to Create/Modify |
+|----------|------------------------|
+| HIGH | `SpreadsheetGrid.tsx`, all component files (memo), `studio/` folder structure |
+| MEDIUM | `README.md`, delete `FileUpload.tsx`, `FormulaBar.tsx` |
+| LOW | Split `Ribbon.tsx`, `globals.css` (dark mode), `layout.tsx` (skip links) |
 
-/* AFTER */
-.ribbon-group-label {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  text-align: center;
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--text-tertiary);
-  padding: 3px 0 1px;
-  border-top: 1px solid var(--border-light);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-```
+---
 
-Key: `white-space: nowrap` + `text-overflow: ellipsis` — labels never wrap or overflow. `padding: 3px 0 1px` — tighter vertical fit.
+## Timeline Estimate
 
-### Change 4: `.ribbon-toolbar` — consistent gap
+| Sprint | Focus | Deliverables |
+|--------|-------|--------------|
+| 1 | HIGH-1, HIGH-2 | Accessible/virtualized grid, memoized components |
+| 2 | HIGH-3, MEDIUM-1 | Split StudioApp, project README |
+| 3 | MEDIUM-2,3,4 | Clean up duplicates, formula autocomplete |
+| 4 | LOW-1,2,3 | Split ribbon, dark mode, skip links |
 
-```css
-/* BEFORE (current) */
-.ribbon-toolbar {
-  display: flex;
-  align-items: stretch;
-  padding: 8px 12px;
-  background: var(--bg-ribbon);
-  min-height: 72px;
-  gap: 8px;
-  overflow-x: auto;
-}
-
-/* AFTER */
-.ribbon-toolbar {
-  display: flex;
-  align-items: stretch;
-  padding: 4px 12px 2px;
-  background: var(--bg-ribbon);
-  min-height: 76px;
-  gap: 0;
-  overflow-x: hidden;
-}
-```
-
-Key: `gap: 0` — separator border between groups handles spacing visually. `overflow-x: hidden` — eliminates horizontal scroll; groups shrink instead. `padding` adjusted to balance vertical space with the 16px bottom padding on groups.
-
-### Change 5: `.ribbon-btn` — fix alignment inside stretched groups
-
-```css
-/* BEFORE (current) */
-.ribbon-btn {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  ...
-  min-width: 44px !important;
-}
-
-/* AFTER */
-.ribbon-btn {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  ...
-  min-width: 40px !important;
-  flex-shrink: 1;
-}
-```
-
-Key: `min-width: 40px` (slightly smaller) + `flex-shrink: 1` — buttons shrink if needed.
-
-### Change 6: `.ribbon-btn-sm` — smaller min-width
-
-```css
-/* BEFORE */
-.ribbon-btn-sm { min-width: 32px !important; padding: 4px !important; }
-
-/* AFTER */
-.ribbon-btn-sm { min-width: 28px !important; padding: 3px 4px !important; }
-```
-
-### Change 7: `.ribbon-select` — remove hardcoded white (already done, verify)
-
-```css
-.ribbon-select { ... background: var(--bg-surface); ... }
-```
-
-### Change 8: Fix inline styles in HomeRibbon `G` children
-
-The `Font` and `Alignment` groups use inline `flexDirection: 'column'` divs with hardcoded `gap: 2` and `gap: 4`. Normalize all inner flex containers to `gap: 4`:
-
-- `HomeRibbon` line 330: `gap: 2` → `gap: 4` (Clipboard Copy/Cut)
-- `HomeRibbon` line 337: `gap: 4` (Font format buttons row) — keep
-- `HomeRibbon` line 363: `gap: 2` → `gap: 4` (Bold/Italic/Underline row)
-- `HomeRibbon` line 391: `gap: 2` → `gap: 4` (Alignment buttons row)
-- `HomeRibbon` line 414: `gap: 2` → `gap: 4` (Merge/Wrap row)
-- `HomeRibbon` line 478-489: `gap: 4` (Cells rows) — keep, already 4
-
-## File Summary
-
-| File | Change |
-|------|--------|
-| `rancage-studio/src/components/Ribbon.tsx` | CSS in `<style>` block (lines 932-1133) + inline `gap` in HomeRibbon (lines ~330-489) |
-
-## Validation
-
-1. `npm run build` in `rancage-studio/` — must compile without errors
-2. Visual check: all tabs (Home, Insert, Data, etc.) — groups should be evenly spaced, labels at bottom, no horizontal scroll
-3. Narrow window test: groups shrink proportionally, no cutoff
+**Estimated: 4-5 weeks for HIGH+MEDIUM items**

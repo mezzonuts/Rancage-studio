@@ -33,3 +33,11 @@ export function deleteDashboard(id: string): void {
 export function getDashboard(id: string): DashboardState | undefined {
   return loadDashboards().find((d) => d.id === id);
 }
+
+export function createDefaultDashboard(): DashboardState {
+  return {
+    id: crypto.randomUUID(),
+    name: 'Dashboard',
+    widgets: [],
+  };
+}

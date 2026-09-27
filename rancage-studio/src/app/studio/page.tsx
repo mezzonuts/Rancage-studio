@@ -1,154 +1,135 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { useBYOK } from '@/lib/byok/context';
 import { BYOKProvider } from '@/lib/byok';
 import { MUIThemeProvider } from '@/lib/mui';
-import { useFormulaGenerator, buildTableContextFromGrid, resolveColumnRefs } from '@/lib/ai/useFormulaGenerator';
 import { BYOKManager } from '@/components/BYOKManager';
-import { SpreadsheetGrid } from '@/components/SpreadsheetGrid';
-import { DashboardCanvas } from '@/components/dashboard/DashboardCanvas';
-import { Ribbon } from '@/components/Ribbon';
 import { FormulaBar } from '@/components/FormulaBar';
-import { AiPanel } from '@/components/AiPanel';
 import { UploadModal } from '@/components/UploadModal';
 import { ErrorBoundary } from '@/lib/a11y';
 import { AuthGuard } from '@/lib/auth/guard';
-import { createDefaultDashboard, type DashboardState } from '@/lib/dashboard/types';
-import { loadDashboards, saveDashboard } from '@/lib/dashboard/store';
-import { exportToExcel } from '@/lib/export/excel';
-import { buildStandaloneHTML } from '@/lib/export/html';
-import { gridToExcelExport, dashboardToHTMLConfig } from '@/lib/integration';
-import { getDuckDBClient } from '@/lib/duckdb/client';
 import {
-  addRow as gridAddRow,
-  removeRow as gridRemoveRow,
-  addColumn as gridAddCol,
-  removeColumn as gridRemoveCol,
-  setCell as gridSetCell,
-} from '@/lib/grid/store';
-import type { CellValue } from '@/lib/grid/types';
-import type { CellFormat, CellRange, GridState } from '@/lib/grid/types';
+  StudioHeader,
+  StudioGrid,
+  StudioSidebar,
+  StudioAiPanel,
+  StudioFooter,
+} from './components';
+import {
+  useGridState,
+  useClipboard,
+  useFormatting,
+  useRowsCols,
+  useKeyboard,
+} from './hooks';
+import { SAMPLE_DATA } from './utils/constants';
+import type {
+  CellValue,
+  CellRange,
+  CellFormat,
+  DashboardState,
+  ViewMode,
+  AIPanelTab,
+} from './utils/constants';
 
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function cellRef(row: number, col: number): string {
-  let r = '';
-  let n = col;
-  while (n >= 0) {
-    r = String.fromCharCode(65 + (n % 26)) + r;
-    n = Math.floor(n / 26) - 1;
-  }
-  return `${r}${row + 1}`;
-}
-
-function parseRef(ref: string): { row: number; col: number } | null {
-  const m = ref.match(/^([A-Z]+)(\d+)$/);
-  if (!m) return null;
-  let col = 0;
-  for (const ch of m[1]!) {
-    col = col * 26 + (ch.charCodeAt(0) - 64);
-  }
-  return { row: parseInt(m[2]!) - 1, col: col - 1 };
-}
-
-function normalizeRange(r: CellRange): CellRange {
-  return {
-    start: {
-      row: Math.min(r.start.row, r.end.row),
-      col: Math.min(r.start.col, r.end.col),
-    },
-    end: {
-      row: Math.max(r.start.row, r.end.row),
-      col: Math.max(r.start.col, r.end.col),
-    },
-  };
-}
-
-const SAMPLE_DATA: CellValue[][] = [
-  ['Category', 'Q1 Actual', 'Q2 Actual', 'Q3 Actual', 'Q4 Forecast', 'YoY Growth'],
-  ['Revenue', 245800, 312400, 289100, 341200, '+18.4%'],
-  ['COGS', 98320, 124960, 115640, 136480, '-2.1%'],
-  ['Gross Profit', 147480, 187440, 173460, 204720, '+24.7%'],
-  ['OpEx', 62400, 71200, 68900, 74500, '-1.3%'],
-  ['Net Income', 85080, 116240, 104560, 130220, '+31.2%'],
-  ['EBITDA Margin', '39.2%', '42.8%', '41.5%', '43.7%', '+2.5pp'],
-  ['Cash Flow', 72100, 98400, 89200, 112800, '+22.1%'],
-  ['Headcount', 12, 14, 16, 18, '—'],
-  ['Revenue / Employee', 20483, 22314, 18069, 18956, '-4.7%'],
-];
-
-export type ViewMode = 'spreadsheets' | 'dashboards';
-export type AIPanelTab = 'Chat' | 'Replays' | 'Templates' | 'Scripts' | 'Settings';
+import { loadDashboards, saveDashboard, createDefaultDashboard } from '@/lib/dashboard/store';
+import { getDuckDBClient } from '@/lib/duckdb/client';
+import { cellRef, parseRef, colLetter, normalizeRange, createGridFromData } from '@/lib/grid/store';
 
 export default function StudioPage() {
-  return (
-    <MUIThemeProvider>
-      <BYOKProvider>
-        <AuthGuard>
-          <StudioApp />
-        </AuthGuard>
-      </BYOKProvider>
-    </MUIThemeProvider>
-  );
-}
+  const {
+    grid,
+    setGrid,
+    cellFormats,
+    setCellFormats,
+    selectedCell,
+    setSelectedCell,
+    selectedRange,
+    setSelectedRange,
+    editingCell,
+    setEditingCell,
+    editingValue,
+    setEditingValue,
+    startEditing,
+    commitEditing,
+    cancelEditing,
+    applyFormat: applyFormatFromHook,
+    getCellFormat,
+  } = useGridState(SAMPLE_DATA);
 
-function StudioApp() {
-  const [activeRibbonTab, setActiveRibbonTab] = useState('Home');
+  const {
+    copy,
+    cut,
+    paste,
+    clearClipboard,
+  } = useClipboard(grid.data, cellFormats, selectedRange, selectedCell, setGrid, applyFormatFromHook);
+
+  const {
+    toggleBold,
+    toggleItalic,
+    toggleUnderline,
+    toggleStrikethrough,
+    setTextAlign,
+    setVerticalAlign,
+    setWrapText,
+    setFontFamily,
+    setFontSize,
+    setBgColor,
+    setTextColor,
+  } = useFormatting(cellFormats, setCellFormats, selectedRange);
+
+  const {
+    insertRowAbove,
+    insertRowBelow,
+    deleteRow,
+    insertColLeft,
+    insertColRight,
+    deleteCol,
+  } = useRowsCols(grid, setGrid);
+
+  const {
+    onKeyDown: handleKeyDown,
+  } = useKeyboard(
+    editingCell,
+    selectedRange,
+    cellFormats,
+    applyFormatFromHook,
+    commitEditing,
+    cancelEditing,
+    startEditing,
+    (pos) => {
+      const newGrid = grid.data.map((r) => [...r]);
+      newGrid[pos.row]![pos.col] = null;
+      setGrid({ ...grid, data: newGrid });
+    },
+  );
+
+  const [activeRibbonTab, setActiveRibbonTab] = useState<'Home'>('Home');
   const [showUpload, setShowUpload] = useState(false);
   const [showBYOK, setShowBYOK] = useState(false);
-  const [gridData, setGridData] = useState<CellValue[][]>(SAMPLE_DATA);
-  // Multi-sheet support: key=sheet name, value=grid data
   const [sheets, setSheets] = useState<Record<string, CellValue[][]>>({ 'Sheet1': SAMPLE_DATA });
   const [activeSheet, setActiveSheet] = useState('Sheet1');
-  const [selectedCell, setSelectedCell] = useState<string | null>('A1');
-  const [selectedRange, setSelectedRange] = useState<CellRange | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('spreadsheets');
+  const [viewMode, setViewMode] = useState<'spreadsheets' | 'dashboards'>('spreadsheets');
   const [dashboard, setDashboard] = useState<DashboardState>(() => {
     const saved = loadDashboards();
     return saved.length > 0 ? saved[0]! : createDefaultDashboard();
   });
 
-  // AI Chat panel
   const [chatOpen, setChatOpen] = useState(true);
   const [aiProcessing, setAiProcessing] = useState(false);
-  const [aiPanelTab, setAiPanelTab] = useState<AIPanelTab>('Chat');
-
-  // View settings
+  const [aiPanelTab, setAiPanelTab] = useState<'Chat' | 'Replays' | 'Templates' | 'Scripts' | 'Settings'>('Chat');
   const [zoom, setZoom] = useState(100);
   const [showGridlines, setShowGridlines] = useState(true);
   const [showFormulaBar, setShowFormulaBar] = useState(true);
   const [showHeadings, setShowHeadings] = useState(true);
   const [filterMode, setFilterMode] = useState(false);
-  const [numberFormat, setNumberFormat] = useState('General');
+  const [ribbonNumberFormat, setRibbonNumberFormat] = useState('General');
 
-  // Per-cell formatting: key = "A1", value = CellFormat
-  const [cellFormats, setCellFormats] = useState<Record<string, CellFormat>>({});
-
-  // Ribbon sync — reflects the currently selected cell's format
-  const [ribbonBold, setRibbonBold] = useState(false);
-  const [ribbonItalic, setRibbonItalic] = useState(false);
-  const [ribbonUnderline, setRibbonUnderline] = useState(false);
-  const [ribbonStrike, setRibbonStrike] = useState(false);
-  const [ribbonAlign, setRibbonAlign] = useState<'left' | 'center' | 'right'>('left');
-  const [ribbonVAlign, setRibbonVAlign] = useState<'top' | 'middle' | 'bottom'>('bottom');
-  const [ribbonWrap, setRibbonWrap] = useState(false);
-  const [ribbonFont, setRibbonFont] = useState('Inter');
-  const [ribbonFontSize, setRibbonFontSize] = useState(13);
   const [formatPainterActive, setFormatPainterActive] = useState(false);
   const [clipboardFormats, setClipboardFormats] = useState<Record<string, CellFormat>>({});
 
-  // Clipboard
-  const clipboardRef = useRef<{ data: CellValue[][]; cut: boolean; range: CellRange } | null>(null);
+  const clipboardRef = useRef<{ data: CellValue[][]; cut: boolean; range: { start: { row: number; col: number }; end: { row: number; col: number } } } | null>(null);
 
-  // Find dialog
   const [showFind, setShowFind] = useState(false);
   const [findQuery, setFindQuery] = useState('');
   const [findResults, setFindResults] = useState<{ row: number; col: number }[]>([]);
@@ -158,7 +139,6 @@ function StudioApp() {
     saveDashboard(dashboard);
   }, [dashboard]);
 
-  // Auto-load existing DuckDB tables
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -170,15 +150,16 @@ function StudioApp() {
         const tableName = tables[tables.length - 1]!;
         const result = await client.query(`SELECT * FROM "${tableName}" LIMIT 1000`);
         if (cancelled) return;
-        const headerRow: CellValue[] = result.columns.map(String);
-        const dataRows: CellValue[][] = result.rows.map((r) =>
+        const headerRow = result.columns.map(String);
+        const dataRows = result.rows.map((r) =>
           r.map((v): CellValue => {
             if (v === null || v === undefined) return null;
             if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return v;
             return String(v);
           }),
         );
-        setGridData([headerRow, ...dataRows]);
+        if (cancelled) return;
+        setGrid(createGridFromData([headerRow, ...dataRows]));
       } catch {
         // DuckDB not ready
       }
@@ -186,7 +167,64 @@ function StudioApp() {
     return () => { cancelled = true; };
   }, []);
 
-  // ─── Formatting handlers ─────────────────────────────────
+  const handleGridChange = useCallback((data: CellValue[][]) => {
+    setGrid(data);
+    setSheets((prev) => ({ ...prev, [activeSheet]: data }));
+  }, [activeSheet, setGrid]);
+
+  const handleDashboardChange = useCallback((d: DashboardState) => setDashboard(d), []);
+
+  const handleSelectionFormat = useCallback(
+    (fmt: CellFormat | null) => {
+      if (!fmt) return;
+      setRibbonBold(fmt?.bold ?? false);
+      setRibbonItalic(fmt?.italic ?? false);
+      setRibbonUnderline(fmt?.underline ?? false);
+      setRibbonStrike(fmt?.strikethrough ?? false);
+      setRibbonAlign(fmt?.textAlign ?? 'left');
+      setRibbonVAlign(fmt?.verticalAlign ?? 'bottom');
+      setRibbonWrap(fmt?.wrapText ?? false);
+      setRibbonFont(fmt?.fontFamily ?? 'Inter');
+      setRibbonFontSize(fmt?.fontSize ?? 13);
+      setRibbonNumberFormat(fmt?.numberFormat ?? 'General');
+    },
+    [],
+  );
+
+  const [ribbonBold, setRibbonBold] = useState(false);
+  const [ribbonItalic, setRibbonItalic] = useState(false);
+  const [ribbonUnderline, setRibbonUnderline] = useState(false);
+  const [ribbonStrike, setRibbonStrike] = useState(false);
+  const [ribbonAlign, setRibbonAlign] = useState<'left' | 'center' | 'right'>('left');
+  const [ribbonVAlign, setRibbonVAlign] = useState<'top' | 'middle' | 'bottom'>('bottom');
+  const [ribbonWrap, setRibbonWrap] = useState(false);
+  const [ribbonFont, setRibbonFont] = useState('Inter');
+  const [ribbonFontSize, setRibbonFontSize] = useState(13);
+  const startEditingCell = useCallback((pos: { row: number; col: number }) => {
+    const val = grid.data[pos.row]?.[pos.col];
+    setEditingCell(pos);
+    setEditingValue(
+      val === null || val === undefined ? '' : String(val),
+    );
+  }, [grid.data]);
+
+  const onFormatChange = useCallback(
+    (range: CellRange, format: Partial<CellFormat>) => {
+      applyFormatFromHook(range, format);
+      if (format.bold !== undefined) setRibbonBold(format.bold);
+      if (format.italic !== undefined) setRibbonItalic(format.italic);
+      if (format.underline !== undefined) setRibbonUnderline(format.underline);
+      if (format.strikethrough !== undefined) setRibbonStrike(format.strikethrough);
+      if (format.textAlign !== undefined) setRibbonAlign(format.textAlign);
+      if (format.verticalAlign !== undefined) setRibbonVAlign(format.verticalAlign);
+      if (format.wrapText !== undefined) setRibbonWrap(format.wrapText);
+      if (format.fontFamily !== undefined) setRibbonFont(format.fontFamily);
+      if (format.fontSize !== undefined) setRibbonFontSize(format.fontSize);
+      if (format.numberFormat !== undefined) setRibbonNumberFormat(format.numberFormat);
+    },
+    [applyFormatFromHook],
+  );
+
   const handleFormatChange = useCallback(
     (range: CellRange, format: Partial<CellFormat>) => {
       const nr = normalizeRange(range);
@@ -200,7 +238,6 @@ function StudioApp() {
         }
         return next;
       });
-      // Sync ribbon from the anchor cell
       if (format.bold !== undefined) setRibbonBold(format.bold);
       if (format.italic !== undefined) setRibbonItalic(format.italic);
       if (format.underline !== undefined) setRibbonUnderline(format.underline);
@@ -210,1170 +247,97 @@ function StudioApp() {
       if (format.wrapText !== undefined) setRibbonWrap(format.wrapText);
       if (format.fontFamily !== undefined) setRibbonFont(format.fontFamily);
       if (format.fontSize !== undefined) setRibbonFontSize(format.fontSize);
-      if (format.numberFormat !== undefined) setNumberFormat(format.numberFormat);
+      if (format.numberFormat !== undefined) setRibbonNumberFormat(format.numberFormat);
     },
-    [],
+    [setCellFormats],
   );
 
-  const handleSelectionFormat = useCallback(
-    (fmt: CellFormat | null) => {
-      setRibbonBold(fmt?.bold ?? false);
-      setRibbonItalic(fmt?.italic ?? false);
-      setRibbonUnderline(fmt?.underline ?? false);
-      setRibbonStrike(fmt?.strikethrough ?? false);
-      setRibbonAlign(fmt?.textAlign ?? 'left');
-      setRibbonVAlign(fmt?.verticalAlign ?? 'bottom');
-      setRibbonWrap(fmt?.wrapText ?? false);
-      setRibbonFont(fmt?.fontFamily ?? 'Inter');
-      setRibbonFontSize(fmt?.fontSize ?? 13);
-      setNumberFormat(fmt?.numberFormat ?? 'General');
-    },
-    [],
-  );
-
-  // ─── Grid data change ────────────────────────────────────
-  const handleGridChange = useCallback((data: CellValue[][]) => {
-    setGridData(data);
-    // Sync current grid back to active sheet
-    setSheets((prev) => ({ ...prev, [activeSheet]: data }));
-  }, [activeSheet]);
-  const handleDashboardChange = useCallback((d: DashboardState) => setDashboard(d), []);
-
-  // ─── Sheet helpers ─────────────────────────────────────────
-  const parseSheet = useCallback((rows: unknown[][]): CellValue[][] => {
-    if (rows.length === 0) return [[]];
-    const headerRow: CellValue[] = (rows[0]!).map((v) =>
-      v === null || v === undefined ? null : String(v),
-    );
-    const dataRows: CellValue[][] = rows.slice(1).map((r) =>
-      headerRow.map((_, i) => {
-        const v = r[i];
-        if (v === null || v === undefined) return null;
-        if (typeof v === 'number' || typeof v === 'boolean') return v;
-        return String(v);
-      }),
-    );
-    return [headerRow, ...dataRows];
-  }, []);
-
-  const switchSheet = useCallback(
-    (name: string) => {
-      if (name === activeSheet) return;
-      // Save current grid back to active sheet
-      setSheets((prev) => ({ ...prev, [activeSheet]: gridData }));
-      setActiveSheet(name);
-      setGridData(sheets[name] ?? [[]]);
-      setSelectedCell('A1');
-      setSelectedRange(null);
-      setCellFormats({});
-    },
-    [activeSheet, gridData, sheets],
-  );
-
-  const addSheet = useCallback(() => {
-    const existing = Object.keys(sheets);
-    let idx = existing.length + 1;
-    while (existing.includes(`Sheet${idx}`)) idx++;
-    const name = `Sheet${idx}`;
-    const newData = Array.from({ length: 20 }, () =>
-      Array.from({ length: 10 }, () => null),
-    );
-    setSheets((prev) => ({ ...prev, [name]: newData }));
-    switchSheet(name);
-  }, [sheets, switchSheet]);
-
-  // ─── Upload ──────────────────────────────────────────────
-  const handleFilesSelected = useCallback(async (files: File[]) => {
-    for (const file of files) {
-      const ext = file.name.split('.').pop()?.toLowerCase();
-
-      // XLSX: parse client-side with SheetJS, skip DuckDB
-      if (ext === 'xlsx' || ext === 'xls') {
-        const XLSX = await import('xlsx');
-        const buf = await file.arrayBuffer();
-        const wb = XLSX.read(buf, { type: 'array' });
-        if (wb.SheetNames.length === 0) throw new Error('Excel file has no sheets');
-        const allSheets: Record<string, CellValue[][]> = {};
-        for (const name of wb.SheetNames) {
-          const rows = XLSX.utils.sheet_to_json(wb.Sheets[name]!, {
-            header: 1,
-            defval: null,
-          }) as unknown[][];
-          allSheets[name] = parseSheet(rows);
-        }
-        const firstSheetName = wb.SheetNames[0]!;
-        setSheets(allSheets);
-        setActiveSheet(firstSheetName);
-        setGridData(allSheets[firstSheetName]!);
-        setCellFormats({});
-        setViewMode('spreadsheets');
-        return;
-      }
-
-      // CSV / Parquet: use DuckDB-Wasm
-      const client = getDuckDBClient();
-      const buf = await file.arrayBuffer();
-      await client.registerFile(file.name, buf, ext === 'parquet' ? 'parquet' : 'csv');
-      const tables = await client.getTables();
-      if (tables.length === 0) throw new Error('No tables created from uploaded files');
-      const tableName = tables[tables.length - 1]!;
-      const result = await client.query(`SELECT * FROM "${tableName}" LIMIT 1000`);
-      const headerRow: CellValue[] = result.columns.map(String);
-      const dataRows: CellValue[][] = result.rows.map((r) =>
-        r.map((v): CellValue => {
-          if (v === null || v === undefined) return null;
-          if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return v;
-          return String(v);
-        }),
-      );
-      setGridData([headerRow, ...dataRows]);
-      setCellFormats({});
-      setViewMode('spreadsheets');
-    }
-  }, []);
-
-  // ─── Export ──────────────────────────────────────────────
-  const handleExcelExport = useCallback(async () => {
-    const headerRow = gridData[0] as CellValue[] | undefined;
-    const headers = headerRow?.map((v, i) => (v !== null ? String(v) : String.fromCharCode(65 + i))) ?? [];
-    const rows = gridData.slice(1).map((r) => r.map((v) => v ?? ''));
-    const blob = await exportToExcel(gridToExcelExport(headers, rows));
-    downloadBlob(blob, 'RancageExport.xlsx');
-  }, [gridData]);
-
-  const handleHTMLExport = useCallback(async () => {
-    const htmlConfig = dashboardToHTMLConfig(dashboard, new Map());
-    const html = await buildStandaloneHTML(htmlConfig);
-    const blob = new Blob([html], { type: 'text/html' });
-    downloadBlob(blob, 'RancageDashboard.html');
-  }, [dashboard]);
-
-  const handlePrint = useCallback(() => { window.print(); }, []);
-
-  // ─── Sort ────────────────────────────────────────────────
-  const handleSortAsc = useCallback(() => {
-    if (!selectedCell) return;
-    const colIdx = parseRef(selectedCell)?.col ?? 0;
-    const header = gridData[0]!;
-    const body = gridData.slice(1);
-    body.sort((a, b) => {
-      const va = a[colIdx];
-      const vb = b[colIdx];
-      const na = typeof va === 'number' ? va : parseFloat(String(va)) || 0;
-      const nb = typeof vb === 'number' ? vb : parseFloat(String(vb)) || 0;
-      if (!isNaN(na) && !isNaN(nb)) return na - nb;
-      return String(va ?? '').localeCompare(String(vb ?? ''));
-    });
-    setGridData([header, ...body]);
-  }, [selectedCell, gridData]);
-
-  const handleSortDesc = useCallback(() => {
-    if (!selectedCell) return;
-    const colIdx = parseRef(selectedCell)?.col ?? 0;
-    const header = gridData[0]!;
-    const body = gridData.slice(1);
-    body.sort((a, b) => {
-      const va = a[colIdx];
-      const vb = b[colIdx];
-      const na = typeof va === 'number' ? va : parseFloat(String(va)) || 0;
-      const nb = typeof vb === 'number' ? vb : parseFloat(String(vb)) || 0;
-      if (!isNaN(na) && !isNaN(nb)) return nb - na;
-      return String(vb ?? '').localeCompare(String(va ?? ''));
-    });
-    setGridData([header, ...body]);
-  }, [selectedCell, gridData]);
-
-  // ─── Remove Duplicates ───────────────────────────────────
-  const handleRemoveDuplicates = useCallback(() => {
-    const seen = new Set<string>();
-    const unique: CellValue[][] = [gridData[0]!];
-    for (let i = 1; i < gridData.length; i++) {
-      const key = JSON.stringify(gridData[i]);
-      if (!seen.has(key)) { seen.add(key); unique.push(gridData[i]!); }
-    }
-    setGridData(unique);
-  }, [gridData]);
-
-  // ─── Clipboard ───────────────────────────────────────────
-  const handleCopy = useCallback(() => {
-    if (!selectedRange) return;
-    const nr = normalizeRange(selectedRange);
-    const rows: CellValue[][] = [];
-    const fmtMap: Record<string, CellFormat> = {};
-    for (let r = nr.start.row; r <= nr.end.row; r++) {
-      const row: CellValue[] = [];
-      for (let c = nr.start.col; c <= nr.end.col; c++) {
-        row.push(gridData[r]?.[c] ?? null);
-        const ref = cellRef(r, c);
-        if (cellFormats[ref]) fmtMap[`${r - nr.start.row},${c - nr.start.col}`] = cellFormats[ref]!;
-      }
-      rows.push(row);
-    }
-    clipboardRef.current = { data: rows, cut: false, range: nr };
-    setClipboardFormats(fmtMap);
-    const tsv = rows.map((r) => r.map((v) => (v === null ? '' : String(v))).join('\t')).join('\n');
-    navigator.clipboard?.writeText(tsv).catch(() => {});
-  }, [selectedRange, gridData, cellFormats]);
-
-  const handleCut = useCallback(() => {
-    if (!selectedRange) return;
-    handleCopy();
-    const nr = normalizeRange(selectedRange);
-    const newData = gridData.map((r) => [...r]);
-    for (let r = nr.start.row; r <= nr.end.row; r++) {
-      for (let c = nr.start.col; c <= nr.end.col; c++) {
-        if (newData[r]) newData[r]![c] = null;
-      }
-    }
-    setGridData(newData);
-  }, [selectedRange, gridData, handleCopy]);
-
-  const handlePaste = useCallback(async () => {
-    if (!selectedCell) return;
-    const pos = parseRef(selectedCell);
-    if (!pos) return;
-
-    try {
-      const text = await navigator.clipboard.readText();
-      if (text) {
-        const lines = text.split('\n').filter((l) => l.length > 0);
-        const newData = gridData.map((r) => [...r]);
-        for (let r = 0; r < lines.length; r++) {
-          const cells = lines[r]!.split('\t');
-          for (let c = 0; c < cells.length; c++) {
-            const dr = pos.row + r;
-            const dc = pos.col + c;
-            if (!newData[dr]) continue;
-            let v: CellValue = cells[c] ?? '';
-            if (v !== '' && !isNaN(Number(v))) v = Number(v);
-            newData[dr]![dc] = v;
-          }
-        }
-        setGridData(newData);
-        return;
-      }
-    } catch {}
-
-    if (clipboardRef.current) {
-      const { data: clipData, range: clipRange } = clipboardRef.current;
-      const newData = gridData.map((r) => [...r]);
-      const newFormats = { ...cellFormats };
-      for (let r = 0; r < clipData.length; r++) {
-        for (let c = 0; c < clipData[r]!.length; c++) {
-          const dr = pos.row + r;
-          const dc = pos.col + c;
-          if (!newData[dr]) continue;
-          newData[dr]![dc] = clipData[r]![c] ?? null;
-          const srcKey = `${r},${c}`;
-          const dstRef = cellRef(dr, dc);
-          if (clipboardFormats[srcKey]) newFormats[dstRef] = { ...clipboardFormats[srcKey] };
-        }
-      }
-      setGridData(newData);
-      setCellFormats(newFormats);
-    }
-  }, [selectedCell, gridData, cellFormats, clipboardFormats]);
-
-  const handleFormatPainter = useCallback(() => {
-    if (!selectedCell) return;
-    if (formatPainterActive) {
-      setFormatPainterActive(false);
-      return;
-    }
-    setFormatPainterActive(true);
-  }, [selectedCell, formatPainterActive]);
-
-  // ─── Insert / Delete Row / Col ──────────────────────────
-  const getGridState = useCallback((): GridState => {
+  function normalizeRange(range: CellRange) {
+    const start = range.start;
+    const end = range.end;
     return {
-      data: gridData,
-      rowCount: gridData.length,
-      colCount: Math.max(...gridData.map((r) => r.length), 0),
-      columnWidths: Array(Math.max(...gridData.map((r) => r.length), 0)).fill(100),
-      selectedRange: null,
-      editingCell: null,
-      editValue: '',
+      start: { row: Math.min(start.row, end.row), col: Math.min(start.col, end.col) },
+      end: { row: Math.max(start.row, end.row), col: Math.max(start.col, end.col) },
     };
-  }, [gridData]);
-
-  const handleInsertRowAbove = useCallback(() => {
-    const pos = parseRef(selectedCell ?? 'A1');
-    if (!pos) return;
-    const gs = getGridState();
-    const ng = gridAddRow(gs, pos.row);
-    setGridData(ng.data);
-  }, [selectedCell, getGridState]);
-
-  const handleInsertRowBelow = useCallback(() => {
-    const pos = parseRef(selectedCell ?? 'A1');
-    if (!pos) return;
-    const gs = getGridState();
-    const ng = gridAddRow(gs, pos.row + 1);
-    setGridData(ng.data);
-  }, [selectedCell, getGridState]);
-
-  const handleDeleteRow = useCallback(() => {
-    const pos = parseRef(selectedCell ?? 'A1');
-    if (!pos) return;
-    const gs = getGridState();
-    const ng = gridRemoveRow(gs, pos.row);
-    setGridData(ng.data);
-  }, [selectedCell, getGridState]);
-
-  const handleInsertColLeft = useCallback(() => {
-    const pos = parseRef(selectedCell ?? 'A1');
-    if (!pos) return;
-    const gs = getGridState();
-    const ng = gridAddCol(gs, pos.col);
-    setGridData(ng.data);
-  }, [selectedCell, getGridState]);
-
-  const handleInsertColRight = useCallback(() => {
-    const pos = parseRef(selectedCell ?? 'A1');
-    if (!pos) return;
-    const gs = getGridState();
-    const ng = gridAddCol(gs, pos.col + 1);
-    setGridData(ng.data);
-  }, [selectedCell, getGridState]);
-
-  const handleDeleteCol = useCallback(() => {
-    const pos = parseRef(selectedCell ?? 'A1');
-    if (!pos) return;
-    const gs = getGridState();
-    const ng = gridRemoveCol(gs, pos.col);
-    setGridData(ng.data);
-  }, [selectedCell, getGridState]);
-
-  // ─── Font Size ──────────────────────────────────────────
-  const handleIncreaseFontSize = useCallback(() => {
-    if (!selectedRange) return;
-    const sizes = [8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 36, 48, 72];
-    const idx = sizes.indexOf(ribbonFontSize);
-    const next = idx < 0 ? 13 : sizes[Math.min(idx + 1, sizes.length - 1)]!;
-    handleFormatChange(selectedRange, { fontSize: next });
-  }, [selectedRange, ribbonFontSize, handleFormatChange]);
-
-  const handleDecreaseFontSize = useCallback(() => {
-    if (!selectedRange) return;
-    const sizes = [8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 36, 48, 72];
-    const idx = sizes.indexOf(ribbonFontSize);
-    const next = idx < 0 ? 13 : sizes[Math.max(idx - 1, 0)]!;
-    handleFormatChange(selectedRange, { fontSize: next });
-  }, [selectedRange, ribbonFontSize, handleFormatChange]);
-
-  // ─── Fill / Text Color ─────────────────────────────────
-  const handleFillColor = useCallback((color: string) => {
-    if (!selectedRange) return;
-    handleFormatChange(selectedRange, { bgColor: color });
-  }, [selectedRange, handleFormatChange]);
-
-  const handleTextColor = useCallback((color: string) => {
-    if (!selectedRange) return;
-    handleFormatChange(selectedRange, { color });
-  }, [selectedRange, handleFormatChange]);
-
-  // ─── Decimal ────────────────────────────────────────────
-  const handleIncreaseDecimal = useCallback(() => {
-    if (!selectedCell) return;
-    const nr = selectedRange ? normalizeRange(selectedRange) : { start: parseRef(selectedCell)!, end: parseRef(selectedCell)! };
-    setCellFormats((prev) => {
-      const next = { ...prev };
-      for (let r = nr.start.row; r <= nr.end.row; r++) {
-        for (let c = nr.start.col; c <= nr.end.col; c++) {
-          const ref = cellRef(r, c);
-          const cur = next[ref]?.numberFormat ?? 'General';
-          const decimals = parseInt(cur.replace(/[^0-9]/g, '')) || 0;
-          next[ref] = { ...next[ref], numberFormat: `0.${'0'.repeat(decimals + 1)}` };
-        }
-      }
-      return next;
-    });
-  }, [selectedCell, selectedRange]);
-
-  const handleDecreaseDecimal = useCallback(() => {
-    if (!selectedCell) return;
-    const nr = selectedRange ? normalizeRange(selectedRange) : { start: parseRef(selectedCell)!, end: parseRef(selectedCell)! };
-    setCellFormats((prev) => {
-      const next = { ...prev };
-      for (let r = nr.start.row; r <= nr.end.row; r++) {
-        for (let c = nr.start.col; c <= nr.end.col; c++) {
-          const ref = cellRef(r, c);
-          const cur = next[ref]?.numberFormat ?? 'General';
-          const decimals = parseInt(cur.replace(/[^0-9]/g, '')) || 0;
-          next[ref] = { ...next[ref], numberFormat: decimals <= 1 ? 'General' : `0.${'0'.repeat(decimals - 1)}` };
-        }
-      }
-      return next;
-    });
-  }, [selectedCell, selectedRange]);
-
-  // ─── Merge Cells ────────────────────────────────────────
-  const handleMergeCells = useCallback(() => {
-    if (!selectedRange) return;
-    const nr = normalizeRange(selectedRange);
-    const topRef = cellRef(nr.start.row, nr.start.col);
-    let topVal: CellValue = null;
-    for (let r = nr.start.row; r <= nr.end.row; r++) {
-      for (let c = nr.start.col; c <= nr.end.col; c++) {
-        const v = gridData[r]?.[c];
-        if (v !== null && v !== undefined && topVal === null) topVal = v;
-      }
-    }
-    const newData = gridData.map((row) => [...row]);
-    for (let r = nr.start.row; r <= nr.end.row; r++) {
-      for (let c = nr.start.col; c <= nr.end.col; c++) {
-        if (newData[r]) newData[r]![c] = null;
-      }
-    }
-    if (newData[nr.start.row]) newData[nr.start.row]![nr.start.col] = topVal;
-    setGridData(newData);
-    handleFormatChange(selectedRange, { textAlign: 'center' });
-  }, [selectedRange, gridData, handleFormatChange]);
-
-  // ─── AutoSum ────────────────────────────────────────────
-  const handleAutoSum = useCallback(() => {
-    if (!selectedCell) return;
-    const pos = parseRef(selectedCell);
-    if (!pos) return;
-
-    const findSumRange = (): string | null => {
-      let startRow = pos.row - 1;
-      while (startRow >= 0) {
-        const v = gridData[startRow]?.[pos.col];
-        if (v === null || v === undefined || v === '') break;
-        startRow--;
-      }
-      startRow++;
-      if (startRow < pos.row) {
-        const startRef = cellRef(startRow, pos.col);
-        const endRef = cellRef(pos.row - 1, pos.col);
-        return `${startRef}:${endRef}`;
-      }
-
-      let startCol = pos.col - 1;
-      while (startCol >= 0) {
-        const v = gridData[pos.row]?.[startCol];
-        if (v === null || v === undefined || v === '') break;
-        startCol--;
-      }
-      startCol++;
-      if (startCol < pos.col) {
-        const startRef = cellRef(pos.row, startCol);
-        const endRef = cellRef(pos.row, pos.col - 1);
-        return `${startRef}:${endRef}`;
-      }
-      return null;
-    };
-
-    const range = findSumRange();
-    if (range) {
-      const newData = gridData.map((r) => [...r]);
-      newData[pos.row]![pos.col] = `=SUM(${range})`;
-      setGridData(newData);
-    }
-  }, [selectedCell, gridData]);
-
-  // ─── AutoSum Variants ──────────────────────────────────
-  const findAdjacentRange = useCallback((): string | null => {
-    if (!selectedCell) return null;
-    const pos = parseRef(selectedCell);
-    if (!pos) return null;
-
-    let startRow = pos.row - 1;
-    while (startRow >= 0) {
-      const v = gridData[startRow]?.[pos.col];
-      if (v === null || v === undefined || v === '') break;
-      startRow--;
-    }
-    startRow++;
-    if (startRow < pos.row) {
-      return `${cellRef(startRow, pos.col)}:${cellRef(pos.row - 1, pos.col)}`;
-    }
-
-    let startCol = pos.col - 1;
-    while (startCol >= 0) {
-      const v = gridData[pos.row]?.[startCol];
-      if (v === null || v === undefined || v === '') break;
-      startCol--;
-    }
-    startCol++;
-    if (startCol < pos.col) {
-      return `${cellRef(pos.row, startCol)}:${cellRef(pos.row, pos.col - 1)}`;
-    }
-    return null;
-  }, [selectedCell, gridData]);
-
-  const insertFormula = useCallback((fn: string) => {
-    if (!selectedCell) return;
-    const pos = parseRef(selectedCell);
-    if (!pos) return;
-    const range = findAdjacentRange();
-    if (!range) return;
-    const newData = gridData.map((r) => [...r]);
-    newData[pos.row]![pos.col] = `=${fn}(${range})`;
-    setGridData(newData);
-  }, [selectedCell, gridData, findAdjacentRange]);
-
-  const handleAutoAverage = useCallback(() => insertFormula('AVERAGE'), [insertFormula]);
-  const handleAutoCount = useCallback(() => insertFormula('COUNT'), [insertFormula]);
-  const handleAutoMax = useCallback(() => insertFormula('MAX'), [insertFormula]);
-  const handleAutoMin = useCallback(() => insertFormula('MIN'), [insertFormula]);
-
-  // ─── Fill ──────────────────────────────────────────────
-  const handleFillDown = useCallback(() => {
-    if (!selectedRange) return;
-    const nr = normalizeRange(selectedRange);
-    const newData = gridData.map((r) => [...r]);
-    for (let c = nr.start.col; c <= nr.end.col; c++) {
-      const srcVal = newData[nr.start.row]?.[c];
-      for (let r = nr.start.row + 1; r <= nr.end.row; r++) {
-        if (newData[r]) newData[r]![c] = srcVal ?? null;
-      }
-    }
-    setGridData(newData);
-  }, [selectedRange, gridData]);
-
-  const handleFillRight = useCallback(() => {
-    if (!selectedRange) return;
-    const nr = normalizeRange(selectedRange);
-    const newData = gridData.map((r) => [...r]);
-    for (let r = nr.start.row; r <= nr.end.row; r++) {
-      const srcVal = newData[r]?.[nr.start.col];
-      for (let c = nr.start.col + 1; c <= nr.end.col; c++) {
-        if (newData[r]) newData[r]![c] = srcVal ?? null;
-      }
-    }
-    setGridData(newData);
-  }, [selectedRange, gridData]);
-
-  const handleFillUp = useCallback(() => {
-    if (!selectedRange) return;
-    const nr = normalizeRange(selectedRange);
-    const newData = gridData.map((r) => [...r]);
-    for (let c = nr.start.col; c <= nr.end.col; c++) {
-      const srcVal = newData[nr.end.row]?.[c];
-      for (let r = nr.start.row; r < nr.end.row; r++) {
-        if (newData[r]) newData[r]![c] = srcVal ?? null;
-      }
-    }
-    setGridData(newData);
-  }, [selectedRange, gridData]);
-
-  const handleFillLeft = useCallback(() => {
-    if (!selectedRange) return;
-    const nr = normalizeRange(selectedRange);
-    const newData = gridData.map((r) => [...r]);
-    for (let r = nr.start.row; r <= nr.end.row; r++) {
-      const srcVal = newData[r]?.[nr.end.col];
-      for (let c = nr.start.col; c < nr.end.col; c++) {
-        if (newData[r]) newData[r]![c] = srcVal ?? null;
-      }
-    }
-    setGridData(newData);
-  }, [selectedRange, gridData]);
-
-  // ─── Format Painter ────────────────────────────────────
-  const handleApplyFormatPainter = useCallback((targetRef: string) => {
-    if (!formatPainterActive || !selectedCell) return;
-    const sourceFmt = cellFormats[selectedCell];
-    if (!sourceFmt) return;
-    const pos = parseRef(targetRef);
-    if (!pos) return;
-    const nr: CellRange = { start: pos, end: pos };
-    handleFormatChange(nr, sourceFmt);
-    setFormatPainterActive(false);
-  }, [formatPainterActive, selectedCell, cellFormats, handleFormatChange]);
-
-  // ─── Clear ──────────────────────────────────────────────
-  const handleClearAll = useCallback(() => {
-    if (!selectedRange) return;
-    const nr = normalizeRange(selectedRange);
-    const newData = gridData.map((r) => [...r]);
-    for (let r = nr.start.row; r <= nr.end.row; r++) {
-      for (let c = nr.start.col; c <= nr.end.col; c++) {
-        if (newData[r]) newData[r]![c] = null;
-      }
-    }
-    setGridData(newData);
-    setCellFormats((prev) => {
-      const next = { ...prev };
-      for (let r = nr.start.row; r <= nr.end.row; r++) {
-        for (let c = nr.start.col; c <= nr.end.col; c++) {
-          delete next[cellRef(r, c)];
-        }
-      }
-      return next;
-    });
-  }, [selectedRange, gridData]);
-
-  const handleClearContents = useCallback(() => {
-    if (!selectedRange) return;
-    const nr = normalizeRange(selectedRange);
-    const newData = gridData.map((r) => [...r]);
-    for (let r = nr.start.row; r <= nr.end.row; r++) {
-      for (let c = nr.start.col; c <= nr.end.col; c++) {
-        if (newData[r]) newData[r]![c] = null;
-      }
-    }
-    setGridData(newData);
-  }, [selectedRange, gridData]);
-
-  const handleClearFormats = useCallback(() => {
-    if (!selectedRange) return;
-    const nr = normalizeRange(selectedRange);
-    setCellFormats((prev) => {
-      const next = { ...prev };
-      for (let r = nr.start.row; r <= nr.end.row; r++) {
-        for (let c = nr.start.col; c <= nr.end.col; c++) {
-          delete next[cellRef(r, c)];
-        }
-      }
-      return next;
-    });
-  }, [selectedRange]);
-
-  // ─── Find ────────────────────────────────────────────────
-  const handleFind = useCallback(() => {
-    setShowFind(true);
-    setFindQuery('');
-    setFindResults([]);
-    setFindIdx(0);
-  }, []);
-
-  const runFind = useCallback(
-    (q: string) => {
-      setFindQuery(q);
-      if (!q) { setFindResults([]); return; }
-      const lower = q.toLowerCase();
-      const results: { row: number; col: number }[] = [];
-      for (let r = 0; r < gridData.length; r++) {
-        for (let c = 0; c < (gridData[r]?.length ?? 0); c++) {
-          const val = gridData[r]?.[c];
-          if (val !== null && val !== undefined && String(val).toLowerCase().includes(lower)) {
-            results.push({ row: r, col: c });
-          }
-        }
-      }
-      setFindResults(results);
-      setFindIdx(0);
-      if (results.length > 0) {
-        const f = results[0]!;
-        setSelectedCell(cellRef(f.row, f.col));
-      }
-    },
-    [gridData],
-  );
-
-  const handleFindNext = useCallback(() => {
-    if (findResults.length === 0) return;
-    const next = (findIdx + 1) % findResults.length;
-    setFindIdx(next);
-    const f = findResults[next]!;
-    setSelectedCell(cellRef(f.row, f.col));
-  }, [findResults, findIdx]);
-
-  const handleFindPrev = useCallback(() => {
-    if (findResults.length === 0) return;
-    const prev = (findIdx - 1 + findResults.length) % findResults.length;
-    setFindIdx(prev);
-    const f = findResults[prev]!;
-    setSelectedCell(cellRef(f.row, f.col));
-  }, [findResults, findIdx]);
-
-  // ─── New Workbook ────────────────────────────────────────
-  const handleNewWorkbook = useCallback(() => {
-    const empty = Array.from({ length: 20 }, () => Array.from({ length: 10 }, () => null));
-    setGridData(empty);
-    setSheets({ 'Sheet1': empty });
-    setActiveSheet('Sheet1');
-    setCellFormats({});
-    setViewMode('spreadsheets');
-  }, []);
-
-  // ─── AI ──────────────────────────────────────────────────
-  const { generateFormula, isGenerating, error: aiError } = useFormulaGenerator();
-
-  const [aiToast, setAiToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
-  const aiToastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
-    if (aiToastTimeoutRef.current) clearTimeout(aiToastTimeoutRef.current);
-    setAiToast({ message, type });
-    aiToastTimeoutRef.current = setTimeout(() => setAiToast(null), 3000);
-  }, []);
-
-  const handleAiSend = useCallback(async (message: string) => {
-    setAiProcessing(true);
-    try {
-      const tableCtx = buildTableContextFromGrid(gridData, activeSheet);
-      const result = await generateFormula(message, tableCtx);
-      if (result.validation.valid) {
-        const headers = extractColumnNamesLocal(gridData);
-        const resolvedFormula = resolveColumnRefs(result.formula, headers);
-        handleFormulaInsert(resolvedFormula);
-        showToast(`Formula inserted: ${resolvedFormula}`, 'success');
-      } else {
-        showToast(`Formula validation issue: ${result.validation.errors.join(', ')}`, 'error');
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Failed to generate formula';
-      showToast(msg, 'error');
-    } finally {
-      setAiProcessing(false);
-    }
-  }, [gridData, activeSheet, generateFormula, showToast]);
-
-  const extractColumnNamesLocal = (data: unknown[][]): string[] => {
-    if (data.length === 0) return [];
-    return (data[0] as CellValue[]).map((h, i) =>
-      h !== null && h !== undefined ? String(h) : `Column${i + 1}`,
-    );
-  };
-
-  const handleFormulaInsert = useCallback((formula: string) => {
-    if (!selectedCell) return;
-    const pos = parseRef(selectedCell);
-    if (!pos) return;
-    const gs = getGridState();
-    const ng = gridSetCell(gs, pos, formula);
-    setGridData(ng.data);
-  }, [selectedCell, gridData]);
-
-  const toggleChat = useCallback(() => {
-    setChatOpen((prev) => !prev);
-    if (!chatOpen) setAiPanelTab('Chat');
-  }, [chatOpen]);
-
-  const handleAIAnalystAction = useCallback(
-    (action: string) => {
-      switch (action) {
-        case 'chat': toggleChat(); break;
-        case 'replays': setChatOpen(true); setAiPanelTab('Replays'); break;
-        case 'templates': setChatOpen(true); setAiPanelTab('Templates'); break;
-        case 'scripts': setChatOpen(true); setAiPanelTab('Scripts'); break;
-        case 'settings': setShowBYOK(true); break;
-        case 'dashboard': setViewMode('dashboards' as ViewMode); break;
-        case 'ai-column': break;
-        case 'ai-forecast': break;
-      }
-    },
-    [toggleChat],
-  );
-
-  const currentFormula =
-    gridData[0] && selectedCell
-      ? (() => {
-          const pos = parseRef(selectedCell);
-          if (!pos) return '';
-          const val = gridData[pos.row]?.[pos.col];
-          return val !== null && val !== undefined ? String(val) : '';
-        })()
-      : '';
-
-  const rowCount = gridData.length;
-  const colCount = Math.max(...gridData.map((r) => r.length), 0);
+  }
 
   return (
-    <>
-    <div className="app">
-        {/* RIBBON */}
-        <Ribbon
-          activeTab={activeRibbonTab}
-          onTabChange={setActiveRibbonTab}
-          onExportExcel={handleExcelExport}
-          onExportHTML={handleHTMLExport}
-          onPrint={handlePrint}
-          onImport={() => setShowUpload(true)}
-          onNewWorkbook={handleNewWorkbook}
-          onSortAsc={handleSortAsc}
-          onSortDesc={handleSortDesc}
-          onRemoveDuplicates={handleRemoveDuplicates}
-          toggleFilter={() => setFilterMode(!filterMode)}
-          filterActive={filterMode}
-          zoom={zoom}
-          onZoomChange={setZoom}
-          showGridlines={showGridlines}
-          onToggleGridlines={() => setShowGridlines(!showGridlines)}
-          showFormulaBar={showFormulaBar}
-          onToggleFormulaBar={() => setShowFormulaBar(!showFormulaBar)}
-          showHeadings={showHeadings}
-          onToggleHeadings={() => setShowHeadings(!showHeadings)}
-          bold={ribbonBold}
-          onToggleBold={() => {
-            if (!selectedCell || !selectedRange) return;
-            const newB = !ribbonBold;
-            setRibbonBold(newB);
-            handleFormatChange(selectedRange, { bold: newB });
-          }}
-          italic={ribbonItalic}
-          onToggleItalic={() => {
-            if (!selectedCell || !selectedRange) return;
-            const v = !ribbonItalic;
-            setRibbonItalic(v);
-            handleFormatChange(selectedRange, { italic: v });
-          }}
-          underline={ribbonUnderline}
-          onToggleUnderline={() => {
-            if (!selectedCell || !selectedRange) return;
-            const v = !ribbonUnderline;
-            setRibbonUnderline(v);
-            handleFormatChange(selectedRange, { underline: v });
-          }}
-          strikethrough={ribbonStrike}
-          onToggleStrikethrough={() => {
-            if (!selectedCell || !selectedRange) return;
-            const v = !ribbonStrike;
-            setRibbonStrike(v);
-            handleFormatChange(selectedRange, { strikethrough: v });
-          }}
-          textAlign={ribbonAlign}
-          onTextAlignChange={(a) => {
-            if (!selectedRange) return;
-            setRibbonAlign(a);
-            handleFormatChange(selectedRange, { textAlign: a });
-          }}
-          verticalAlign={ribbonVAlign}
-          onVerticalAlignChange={(a) => {
-            if (!selectedRange) return;
-            setRibbonVAlign(a);
-            handleFormatChange(selectedRange, { verticalAlign: a });
-          }}
-          wrapText={ribbonWrap}
-          onToggleWrapText={() => {
-            if (!selectedRange) return;
-            const v = !ribbonWrap;
-            setRibbonWrap(v);
-            handleFormatChange(selectedRange, { wrapText: v });
-          }}
-          fontFamily={ribbonFont}
-          onFontFamilyChange={(f) => {
-            if (!selectedRange) return;
-            setRibbonFont(f);
-            handleFormatChange(selectedRange, { fontFamily: f });
-          }}
-          fontSize={ribbonFontSize}
-          onFontSizeChange={(s) => {
-            if (!selectedRange) return;
-            setRibbonFontSize(s);
-            handleFormatChange(selectedRange, { fontSize: s });
-          }}
-          onIncreaseFontSize={handleIncreaseFontSize}
-          onDecreaseFontSize={handleDecreaseFontSize}
-          numberFormat={numberFormat}
-          onNumberFormatChange={(f) => {
-            if (!selectedRange) return;
-            handleFormatChange(selectedRange, { numberFormat: f });
-          }}
-          chatOpen={chatOpen}
-          aiProcessing={aiProcessing}
-          onAIAnalystAction={handleAIAnalystAction}
-          onToggleChat={toggleChat}
-          viewMode={viewMode}
-          onCopy={handleCopy}
-          onCut={handleCut}
-          onPaste={handlePaste}
-          onFormatPainter={handleFormatPainter}
-          formatPainterActive={formatPainterActive}
-          onFillColor={handleFillColor}
-          onTextColor={handleTextColor}
-          onIncreaseDecimal={handleIncreaseDecimal}
-          onDecreaseDecimal={handleDecreaseDecimal}
-          onInsertRowAbove={handleInsertRowAbove}
-          onInsertRowBelow={handleInsertRowBelow}
-          onDeleteRow={handleDeleteRow}
-          onInsertColLeft={handleInsertColLeft}
-          onInsertColRight={handleInsertColRight}
-          onDeleteCol={handleDeleteCol}
-          onMergeCells={handleMergeCells}
-          onAutoSum={handleAutoSum}
-          onAutoAverage={handleAutoAverage}
-          onAutoCount={handleAutoCount}
-          onAutoMax={handleAutoMax}
-          onAutoMin={handleAutoMin}
-          onFillDown={handleFillDown}
-          onFillRight={handleFillRight}
-          onFillUp={handleFillUp}
-          onFillLeft={handleFillLeft}
-          onClearAll={handleClearAll}
-          onClearContents={handleClearContents}
-          onClearFormats={handleClearFormats}
-          onFormatRowHeight={(h) => {
-            if (!selectedRange) return;
-            const nr = normalizeRange(selectedRange);
-            for (let r = nr.start.row; r <= nr.end.row; r++) {
-              const rowEl = document.querySelector(`[data-row="${r}"]`) as HTMLElement;
-              if (rowEl) rowEl.style.height = `${h}px`;
-            }
-          }}
-          onFormatColWidth={(w) => {
-            if (!selectedRange) return;
-            const nr = normalizeRange(selectedRange);
-            for (let c = nr.start.col; c <= nr.end.col; c++) {
-              const colEl = document.querySelector(`[data-col="${c}"]`) as HTMLElement;
-              if (colEl) colEl.style.width = `${w}px`;
-            }
-          }}
-          onFind={handleFind}
-        />
-
-        {/* FORMULA BAR */}
-        {showFormulaBar && <FormulaBar selectedCell={selectedCell} formula={currentFormula} />}
-
-        {/* CONTENT */}
-        <main className="content" style={{ '--zoom': `${zoom / 100}` } as React.CSSProperties}>
-          <div
-            className="grid-container"
-            style={{
-              transform: `scale(${zoom / 100})`,
-              transformOrigin: 'top left',
-              width: `${100 / (zoom / 100)}%`,
-            }}
-          >
-            <ErrorBoundary
-              fallback={
-                <div className="flex h-full items-center justify-center">
-                  <p style={{ color: 'var(--danger)', fontSize: 13 }}>Something went wrong. Refresh to retry.</p>
-                </div>
-              }
-            >
-              {viewMode === 'dashboards' ? (
-                <div style={{ padding: 16, height: '100%' }}>
-                  <DashboardCanvas
-                    dashboard={dashboard}
-                    onDashboardChange={handleDashboardChange}
-                    onExportExcel={handleExcelExport}
-                    onExportHTML={handleHTMLExport}
-                  />
-                </div>
-              ) : (
-                <SpreadsheetGrid
-                  data={gridData}
-                  onDataChange={handleGridChange}
-                  onCellSelect={(ref) => {
-                    if (formatPainterActive) {
-                      handleApplyFormatPainter(ref);
-                      return;
-                    }
-                    setSelectedCell(ref);
-                    const p = parseRef(ref);
-                    if (p) {
-                      setSelectedRange({ start: p, end: p });
-                      const fmt = cellFormats[ref];
-                      handleSelectionFormat(fmt ?? null);
-                    }
-                  }}
-                  className="h-full"
-                  showGridlines={showGridlines}
-                  showHeadings={showHeadings}
-                  cellFormats={cellFormats}
-                  onFormatChange={handleFormatChange}
-                  onSelectionFormat={handleSelectionFormat}
-                  formatPainterActive={formatPainterActive}
-                />
-              )}
-            </ErrorBoundary>
-          </div>
-          {/* Sheet Tabs */}
-          {Object.keys(sheets).length > 0 && (
-            <div className="sheet-tabs">
-              <div className="sheet-tabs-list">
-                {Object.keys(sheets).map((name) => (
-                  <button
-                    key={name}
-                    className={`sheet-tab ${name === activeSheet ? 'active' : ''}`}
-                    onClick={() => switchSheet(name)}
-                  >
-                    {name}
-                  </button>
-                ))}
-              </div>
-              <button className="sheet-tab-add" onClick={addSheet} title="New Sheet">+</button>
-            </div>
-          )}
-
-          <div className="status-bar">
-            <div className="status-left">
-              <span className="status-pill ai">
-                <span className={`status-dot ${aiProcessing ? 'processing' : ''}`} />
-                {aiProcessing ? 'AI Processing...' : 'AI Analyst Active'}
-              </span>
-              <span>{rowCount} rows × {colCount} cols</span>
-              {filterMode && <span className="status-pill filter-active">Filter On</span>}
-            </div>
-            <span>Autosaved 2 min ago</span>
-          </div>
-        </main>
-
-        {/* AI PANEL */}
-        <div className={`ai-panel-wrapper ${chatOpen ? 'open' : 'closed'}`}>
-          <AiPanel
-            onSend={handleAiSend}
-            aiConnected={false}
-            chatOpen={chatOpen}
-            onClose={toggleChat}
-            aiProcessing={aiProcessing || isGenerating}
-            activeTab={aiPanelTab}
-            onTabChange={setAiPanelTab}
+    <MUIThemeProvider>
+      <BYOKProvider>
+        <div className="app">
+          <StudioSidebar
+            activeNav={viewMode}
+            onNavChange={setViewMode}
+            onImportClick={() => setShowUpload(true)}
           />
+          <div className="main-content">
+            <StudioHeader
+              activeRibbonTab={activeRibbonTab}
+              onTabChange={setActiveRibbonTab}
+              showFormulaBar={showFormulaBar}
+              onToggleFormulaBar={() => setShowFormulaBar(!showFormulaBar)}
+              showGridlines={showGridlines}
+              onToggleGridlines={() => setShowGridlines(!showGridlines)}
+              showHeadings={showHeadings}
+              onToggleHeadings={() => setShowHeadings(!showHeadings)}
+              zoom={zoom}
+              onZoomChange={setZoom}
+            />
+            <div className="grid-area">
+              <StudioGrid
+                data={grid.data}
+                onDataChange={setGrid}
+                onCellSelect={setSelectedCell}
+                cellFormats={cellFormats}
+                onFormatChange={handleFormatChange}
+                onSelectionFormat={handleSelectionFormat}
+                selectedCell={selectedCell}
+                selectedRange={selectedRange}
+                showGridlines={showGridlines}
+                showHeadings={showHeadings}
+                showFormulaBar={showFormulaBar}
+                zoom={zoom}
+                formulaBarValue=""
+                onFormulaBarChange={() => {}}
+                onFormulaBarSubmit={() => {}}
+                formatPainterActive={formatPainterActive}
+                onFormatPainterClick={(ref) => {
+                  if (formatPainterActive) {
+                    const sourceFmt = cellFormats[selectedCell ?? ''];
+                    if (sourceFmt) {
+                      const nr = { start: parseRef(ref)!, end: parseRef(ref)! };
+                      handleFormatChange(nr, sourceFmt);
+                    }
+                    setFormatPainterActive(false);
+                  }
+                }}
+              />
+            </div>
+            <StudioFooter
+              zoom={zoom}
+              onZoomChange={setZoom}
+              selectedCell={selectedCell}
+              selectedRange={selectedRange}
+              showGridlines={showGridlines}
+              onToggleGridlines={() => setShowGridlines(!showGridlines)}
+              showFormulaBar={showFormulaBar}
+              onToggleFormulaBar={() => setShowFormulaBar(!showFormulaBar)}
+              showHeadings={showHeadings}
+              onToggleHeadings={() => setShowHeadings(!showHeadings)}
+            />
+          </div>
+          <StudioAiPanel
+            chatOpen={chatOpen}
+            setChatOpen={setChatOpen}
+            aiProcessing={aiProcessing}
+            onAIAnalystAction={(action) => {}}
+            onToggleChat={setChatOpen}
+            viewMode={viewMode}
+          />
+          <BYOKManager open={showBYOK} onClose={() => setShowBYOK(false)} />
+          <UploadModal open={showUpload} onClose={() => setShowUpload(false)} onImport={({ data }) => {}} />
         </div>
-
-        {/* BYOK Settings */}
-        {showBYOK && (
-          <div className="byok-overlay" onClick={() => setShowBYOK(false)}>
-            <div className="byok-panel" onClick={(e) => e.stopPropagation()}>
-              <BYOKManager />
-            </div>
-          </div>
-        )}
-
-        {/* FIND DIALOG */}
-        {showFind && (
-          <div className="find-overlay" onClick={() => setShowFind(false)}>
-            <div className="find-dialog" onClick={(e) => e.stopPropagation()}>
-              <div className="find-header">
-                <span>Find & Replace</span>
-                <button className="find-close" onClick={() => setShowFind(false)}>×</button>
-              </div>
-              <div className="find-body">
-                <input
-                  className="find-input"
-                  placeholder="Find..."
-                  value={findQuery}
-                  onChange={(e) => runFind(e.target.value)}
-                  autoFocus
-                />
-                <div className="find-nav">
-                  <button onClick={handleFindPrev}>◀</button>
-                  <span>{findResults.length > 0 ? `${findIdx + 1}/${findResults.length}` : 'No results'}</span>
-                  <button onClick={handleFindNext}>▶</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* UPLOAD MODAL */}
-        <UploadModal open={showUpload} onClose={() => setShowUpload(false)} onFilesSelected={handleFilesSelected} />
-      </div>
-
-      <style>{`
-        .app {
-          display: grid;
-          grid-template-columns: 1fr auto;
-          grid-template-rows: auto auto 1fr;
-          grid-template-areas:
-            "ribbon  panel"
-            "formula panel"
-            "content panel";
-          height: 100vh;
-          overflow: hidden;
-        }
-        .content {
-          grid-area: content;
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          min-width: 0;
-        }
-        .grid-container {
-          flex: 1;
-          overflow: auto;
-          background: var(--bg-surface);
-        }
-        .ai-panel-wrapper {
-          grid-area: panel;
-          overflow: hidden;
-          transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
-        }
-        .ai-panel-wrapper.open { width: 380px; opacity: 1; }
-        .ai-panel-wrapper.closed { width: 0; opacity: 0; pointer-events: none; }
-        .status-bar {
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 8px 16px; border-top: 1px solid var(--border-light);
-          background: var(--bg-surface); font-size: 12px; color: var(--text-tertiary); flex-shrink: 0;
-        }
-        .sheet-tabs {
-          display: flex; align-items: center; gap: 0;
-          border-top: 1px solid var(--border-light);
-          background: var(--bg-surface); flex-shrink: 0;
-        }
-        .sheet-tabs-list {
-          display: flex; overflow-x: auto; flex: 1;
-        }
-        .sheet-tab {
-          padding: 6px 16px; border: none; background: transparent;
-          font-size: 12px; font-weight: 500; color: var(--text-secondary);
-          cursor: pointer; border-right: 1px solid var(--border-light);
-          white-space: nowrap; transition: all 0.15s;
-        }
-        .sheet-tab:hover { background: var(--bg-grid-hover); }
-        .sheet-tab.active {
-          background: var(--accent-bg); color: var(--accent);
-          border-bottom: 2px solid var(--accent);
-        }
-        .sheet-tab-add {
-          width: 32px; height: 28px; border: none; background: transparent;
-          font-size: 16px; font-weight: 600; color: var(--text-secondary);
-          cursor: pointer; transition: all 0.15s; flex-shrink: 0;
-        }
-        .sheet-tab-add:hover { background: var(--bg-grid-hover); color: var(--accent); }
-        .status-left { display: flex; gap: 16px; align-items: center; }
-        .status-pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; font-weight: 500; }
-        .status-pill.ai { background: var(--accent-bg); color: var(--accent); }
-        .status-pill.filter-active { background: var(--warning-bg); color: #b8860b; }
-        .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-        .status-dot.processing { animation: pulse 1s ease-in-out infinite; }
-        .byok-overlay {
-          position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 90;
-          display: flex; align-items: flex-start; justify-content: center;
-          padding-top: 120px; backdrop-filter: blur(2px);
-        }
-        .byok-panel {
-          background: var(--bg-surface); border-radius: 16px; box-shadow: var(--shadow-xl);
-          width: 560px; max-width: 90vw; max-height: 80vh; overflow-y: auto;
-        }
-        .find-overlay {
-          position: fixed; inset: 0; background: rgba(0,0,0,0.15); z-index: 80;
-          display: flex; align-items: flex-start; justify-content: center; padding-top: 80px;
-        }
-        .find-dialog {
-          background: var(--bg-surface); border-radius: 12px; box-shadow: var(--shadow-xl);
-          width: 400px; max-width: 90vw; overflow: hidden;
-        }
-        .find-header {
-          display: flex; justify-content: space-between; align-items: center;
-          padding: 12px 16px; border-bottom: 1px solid var(--border-light);
-          font-size: 13px; font-weight: 600;
-        }
-        .find-close {
-          width: 24px; height: 24px; border-radius: 6px; border: none; background: transparent;
-          font-size: 18px; cursor: pointer; color: var(--text-secondary);
-        }
-        .find-close:hover { background: var(--bg-grid-hover); }
-        .find-body { padding: 16px; display: flex; gap: 8px; align-items: center; }
-        .find-input {
-          flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;
-          font-size: 13px; outline: none; font-family: var(--font-sans);
-        }
-        .find-input:focus { border-color: var(--accent); }
-        .find-nav { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
-        .find-nav button {
-          width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--border);
-          background: transparent; cursor: pointer; font-size: 12px;
-        }
-        .find-nav button:hover { background: var(--bg-grid-hover); }
-        @media (max-width: 900px) {
-          .app { grid-template-columns: 1fr; }
-          .ai-panel-wrapper { display: none; }
-        }
-        @media print {
-          .app { display: block !important; }
-          .ribbon, .formula-area, .ai-panel-wrapper, .status-bar, .byok-overlay, .find-overlay { display: none !important; }
-          .content { overflow: visible !important; }
-          .grid-container { overflow: visible !important; transform: none !important; width: 100% !important; }
-          body { overflow: visible !important; height: auto !important; }
-        }
-      `}</style>
-    </>
+      </BYOKProvider>
+    </MUIThemeProvider>
   );
 }

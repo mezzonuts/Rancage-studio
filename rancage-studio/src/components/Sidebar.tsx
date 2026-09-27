@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback } from 'react';
+import React, { useCallback, memo } from 'react';
 import { useAuth } from '@/lib/auth/context';
 
 interface NavItem {
@@ -82,7 +82,7 @@ const NAV_ICONS: Record<string, React.ReactNode> = {
   ),
 };
 
-export function Sidebar({ activeNav, onNavChange, onImportClick }: SidebarProps) {
+export const Sidebar = memo(function Sidebar({ activeNav, onNavChange, onImportClick }: SidebarProps) {
   const { user, logout } = useAuth();
   const handleClick = useCallback(
     (item: NavItem) => {
@@ -234,4 +234,4 @@ export function Sidebar({ activeNav, onNavChange, onImportClick }: SidebarProps)
       `}</style>
     </aside>
   );
-}
+});

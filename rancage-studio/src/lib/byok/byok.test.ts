@@ -18,7 +18,7 @@ describe('BYOK Config Persistence', () => {
     expect(loadConfig()).toEqual(DEFAULT_CONFIG);
   });
 
-  it('saveConfig persists to localStorage', () => {
+  it('saveConfig persists to localStorage with obfuscated apiKey', () => {
     const custom: BYOKConfig = {
       provider: 'openai',
       baseUrl: 'https://api.openai.com/v1',
@@ -31,7 +31,9 @@ describe('BYOK Config Persistence', () => {
 
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
     expect(stored.provider).toBe('openai');
-    expect(stored.apiKey).toBe('sk-test');
+    // API key should be obfuscated in localStorage
+    expect(stored.apiKey).not.toBe('sk-test');
+    expect(stored.apiKey).toBeTruthy();
   });
 
   it('loadConfig restores saved config with defaults merged', () => {

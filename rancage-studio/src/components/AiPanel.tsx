@@ -5,6 +5,7 @@ import React, {
   useCallback,
   useRef,
   useEffect,
+  memo,
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
 import Box from '@mui/material/Box';
@@ -286,7 +287,7 @@ def analyze(data):
   );
 }
 
-export function AiPanel({
+export const AiPanel = memo(function AiPanel({
   onSend,
   aiConnected = true,
   onClose,
@@ -690,4 +691,4 @@ export function AiPanel({
       `}</style>
     </aside>
   );
-}
+});
